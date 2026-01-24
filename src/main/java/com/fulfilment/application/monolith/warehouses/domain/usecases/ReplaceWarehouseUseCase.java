@@ -16,7 +16,29 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
 
   @Override
   public void replace(Warehouse newWarehouse) {
-    // TODO implement this method
+    
+	  if (newWarehouse == null) {
+	        throw new IllegalArgumentException("Warehouse must not be null");
+	    }
+
+	    if (!warehouseStore.existsByBusinessUnit(newWarehouse.businessUnit())) {
+	        throw new IllegalArgumentException(
+	                "Cannot replace non-existing warehouse with business unit: "
+	                        + newWarehouse.businessUnit()
+	        );
+	    }
+
+	    if (newWarehouse.capacity() <= 0) {
+	        throw new IllegalArgumentException("Warehouse capacity must be greater than zero");
+	    }
+
+	    if (newWarehouse.stock() < 0) {
+	        throw new IllegalArgumentException("Warehouse stock cannot be negative");
+	    }
+
+	    if (newWarehouse.stock() > newWarehouse.capacity()) {
+	        throw new IllegalArgumentException("Warehouse stock cannot exceed capacity");
+	    }
 
     warehouseStore.update(newWarehouse);
   }
