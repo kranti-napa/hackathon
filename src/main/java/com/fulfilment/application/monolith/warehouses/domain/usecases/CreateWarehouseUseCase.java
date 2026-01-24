@@ -16,7 +16,28 @@ public class CreateWarehouseUseCase implements CreateWarehouseOperation {
 
   @Override
   public void create(Warehouse warehouse) {
-    // TODO implement this method
+	  if (warehouse == null) {
+	        throw new IllegalArgumentException("Warehouse must not be null");
+	    }
+
+	    if (warehouseStore.existsByBusinessUnit(warehouse.businessUnit())) {
+	        throw new IllegalArgumentException(
+	                "Warehouse with business unit already exists: " + warehouse.businessUnit()
+	        );
+	    }
+
+	    if (warehouse.capacity() <= 0) {
+	        throw new IllegalArgumentException("Warehouse capacity must be greater than zero");
+	    }
+
+	    if (warehouse.stock() < 0) {
+	        throw new IllegalArgumentException("Warehouse stock cannot be negative");
+	    }
+	    
+	    if (warehouse.stock() > warehouse.capacity()) {
+	        throw new IllegalArgumentException("Warehouse stock cannot exceed capacity");
+	    }
+
 
     // if all went well, create the warehouse
     warehouseStore.create(warehouse);
