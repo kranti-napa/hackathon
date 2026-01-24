@@ -2,9 +2,11 @@ package com.fulfilment.application.monolith.stores;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
@@ -14,15 +16,42 @@ public class StoreResourceAdditionalIT {
   StoreResource resource;
 
   @Test
+  @Transactional
+  public void delete_happyPath_and_notFound() {
+    Store s = new Store("to-delete");
+    s.persist();
+
+    Response r = resource.delete(s.id);
+    assertEquals(Response.Status.NO_CONTENT.getStatusCode(), r.getStatus());
+
+    // deleting again should throw 404
+    WebApplicationException ex = assertThrows(WebApplicationException.class, () -> resource.delete(s.id));
+    assertEquals(404, ex.getResponse().getStatus());
+  }
+
+  @Test
+  public void update_withNullName_throwsBadRequest() {
+    Store updated = new Store();
+    updated.name = null;
+
+    WebApplicationException ex = assertThrows(WebApplicationException.class, () -> resource.update(1L, updated));
+    assertEquals(400, ex.getResponse().getStatus());
+  }
+
+  @Test
+  public void patch_withNullBody_throwsBadRequest() {
+    WebApplicationException ex = assertThrows(WebApplicationException.class, () -> resource.patch(1L, null));
+    assertEquals(400, ex.getResponse().getStatus());
+  }
+
+  @Test
   public void create_withId_throws422() {
     Store s = new Store();
     s.id = 999L;
     s.name = "BAD";
     s.quantityProductsInStock = 1;
 
-    WebApplicationException ex = assertThrows(WebApplicationException.class, () -> {
-      resource.create(s);
-    });
+    WebApplicationException ex = assertThrows(WebApplicationException.class, () -> resource.create(s));
 
     assertEquals(422, ex.getResponse().getStatus());
   }
