@@ -20,28 +20,49 @@ public class WarehouseResourceImpl implements WarehouseResource {
 
   @Override
   public Warehouse createANewWarehouseUnit(@NotNull Warehouse data) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'createANewWarehouseUnit'");
+	  warehouseRepository.persist(data);
+      return toWarehouseResponse(data);
   }
 
   @Override
   public Warehouse getAWarehouseUnitByID(String id) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'getAWarehouseUnitByID'");
+	  Warehouse warehouse = warehouseRepository.findById(id);
+      if (warehouse == null) {
+          throw new IllegalArgumentException("Warehouse not found with id: " + id);
+      }
+      return toWarehouseResponse(warehouse);
   }
 
   @Override
   public void archiveAWarehouseUnitByID(String id) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'archiveAWarehouseUnitByID'");
+	  Warehouse warehouse = warehouseRepository.findById(id);
+      if (warehouse == null) {
+          throw new IllegalArgumentException("Warehouse not found with id: " + id);
+      }
+
+      warehouse.archive();
+      warehouseRepository.update(warehouse);
   }
 
   @Override
   public Warehouse replaceTheCurrentActiveWarehouse(
       String businessUnitCode, @NotNull Warehouse data) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException(
-        "Unimplemented method 'replaceTheCurrentActiveWarehouse'");
+	  Warehouse existingWarehouse =
+	            warehouseRepository.findByBusinessUnitCode(businessUnitCode);
+
+	    if (existingWarehouse == null) {
+	        throw new IllegalArgumentException(
+	                "Warehouse not found with business unit code: " + businessUnitCode);
+	    }
+
+	    // Update fields from input
+	    existingWarehouse.setLocation(data.getLocation());
+	    existingWarehouse.setCapacity(data.getCapacity());
+	    existingWarehouse.setStock(data.getStock());
+
+	    warehouseRepository.update(existingWarehouse);
+
+	    return toWarehouseResponse(existingWarehouse);
   }
 
   private Warehouse toWarehouseResponse(
