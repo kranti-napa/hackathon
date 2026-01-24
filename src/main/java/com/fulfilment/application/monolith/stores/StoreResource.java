@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.TransactionSynchronizationRegistry;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.Status;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
@@ -29,6 +32,9 @@ public class StoreResource {
 
   @Inject LegacyStoreManagerGateway legacyStoreManagerGateway;
 
+  @Inject
+  TransactionSynchronizationRegistry txRegistry;
+  
   private static final Logger LOGGER = Logger.getLogger(StoreResource.class.getName());
 
   @GET
@@ -55,7 +61,22 @@ public class StoreResource {
 
     store.persist();
 
-    legacyStoreManagerGateway.createStoreOnLegacySystem(store);
+    //legacyStoreManagerGateway.createStoreOnLegacySystem(store);
+    txRegistry.registerInterposedSynchronization(new Synchronization() {
+
+        @Override
+        public void beforeCompletion() {
+            // no-op
+        }
+
+        @Override
+        public void afterCompletion(int status) {
+            if (status == Status.STATUS_COMMITTED) {
+                legacyStoreManagerGateway.sync(store);
+            }
+        }
+    });
+
 
     return Response.ok(store).status(201).build();
   }
