@@ -25,6 +25,15 @@ On the class `LocationGateway`, implement the method `resolveByIdentifier`. We a
 Adjust the `StoreResource` operations to make sure that the `LegacyStoreManagerGateway` calls that happens there take place after the changes **are commited to the database**, to guarantee that the downstream legacy system is receiving a confirmed data from us.
 
 If you check the `StoreResource` class and methods, you'll notice that it uses `LegacyStoreManagerGateway` instance. This is simulating an integration with a legacy system with which we are syncing the `Stores` register handled by our system. Although the initial implementation is working properly, we need an implementation that **guarantees** that the change to the `Store` entity is propagated only after it is effectively stored in our database.
+ does not exceed the maximum capacity associated with the location and that it can handle the stock informed.
+
+#### Additional Validations for Replacing a Warehouse
+
+**Capacity Accommodation**
+
+Ensure the new warehouse's capacity can accommodate the stock from the warehouse being replaced.
+
+**Stock Matching**
 
 ### 3. Warehouse (Must have)
 
@@ -50,16 +59,7 @@ Check if a new warehouse can be created at the specified location or if the maxi
 
 **Capacity and Stock Validation** 
 
-Validate the warehouse capacity, ensuring it does not exceed the maximum capacity associated with the location and that it can handle the stock informed.
-
-#### Additional Validations for Replacing a Warehouse
-
-**Capacity Accommodation**
-
-Ensure the new warehouse's capacity can accommodate the stock from the warehouse being replaced.
-
-**Stock Matching**
-
+Validate the warehouse capacity, ensuring it
 Confirm that the stock of the new warehouse matches the stock of the previous warehouse.
 
 ## BONUS task (nice to have)

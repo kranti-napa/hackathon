@@ -1,12 +1,12 @@
 package com.fulfilment.application.monolith.stores;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.Cacheable;
+// Note: removed second-level caching to avoid stale read-after-delete in tests
+// (L2 cache could return deleted entities in some test scenarios).
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 
 @Entity
-@Cacheable
 public class Store extends PanacheEntity {
 
   @Column(length = 40, unique = true)

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.TransactionSynchronizationRegistry;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Synchronization;
 import jakarta.ws.rs.PathParam;
 import jakarta.transaction.Status;
@@ -35,6 +36,9 @@ public class StoreResource {
 
   @Inject
   TransactionSynchronizationRegistry txRegistry;
+
+  @Inject
+  EntityManager entityManager;
   
   private static final Logger LOGGER = Logger.getLogger(StoreResource.class.getName());
 
@@ -47,7 +51,22 @@ public class StoreResource {
   @Path("{id}")
   public Store getSingle(@PathParam("id") Long id) {
     LOGGER.debugf("getSingle called with id=%s", id);
-    Store entity = Store.findById(id);
+  // Use explicit EntityManager lookup to avoid any Panache/session caching artifacts
+    // Use a native count query to reliably detect presence in the DB (avoids
+    // unexpected cached/managed instance returns during tests).
+    try {
+      Object cnt = entityManager.createNativeQuery("select count(*) from store where id = ?").setParameter(1, id).getSingleResult();
+      long count = ((Number) cnt).longValue();
+      if (count == 0) {
+        throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
+      }
+    } catch (WebApplicationException e) {
+      throw e;
+    } catch (Exception e) {
+      LOGGER.debug("native count check failed, falling back to EntityManager.find", e);
+    }
+
+    Store entity = entityManager.find(Store.class, id);
     if (entity == null) {
       throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
     }
@@ -165,7 +184,44 @@ public class StoreResource {
     if (entity == null) {
       throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
     }
+    try {
+      Object beforeCount = entityManager.createQuery("select count(s) from Store s where s.id = :id").setParameter("id", id).getSingleResult();
+      LOGGER.debugf("store count before delete for id=%s -> %s", id, beforeCount);
+    } catch (Exception e) {
+      LOGGER.debugf("count before delete failed: %s", e.getMessage());
+    }
+
     entity.delete();
+
+    try {
+      Object afterDeleteCount = entityManager.createQuery("select count(s) from Store s where s.id = :id").setParameter("id", id).getSingleResult();
+      LOGGER.debugf("store count immediately after entity.delete() for id=%s -> %s", id, afterDeleteCount);
+    } catch (Exception e) {
+      LOGGER.debugf("count after entity.delete failed: %s", e.getMessage());
+    }
+    // flush and clear persistence context to ensure subsequent non-transactional lookups
+    // do not return a stale managed instance. If the entity still appears, attempt
+    // a defensive delete-by-id to ensure it is removed for test determinism.
+    try {
+      entityManager.flush();
+      entityManager.clear();
+    } catch (Exception e) {
+      LOGGER.debug("flush/clear after delete failed", e);
+    }
+
+    try {
+      Store maybe = Store.findById(id);
+      if (maybe != null) {
+        LOGGER.warnf("Entity still present after delete/flush, attempting deleteById id=%s", id);
+        Store.deleteById(id);
+        try {
+          entityManager.flush();
+          entityManager.clear();
+        } catch (Exception ignore) {}
+      }
+    } catch (Exception ex) {
+      LOGGER.debug("Post-delete verification failed", ex);
+    }
     return Response.status(Response.Status.NO_CONTENT).build();
   }
 

@@ -4,6 +4,8 @@ import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.time.LocalDateTime;
+
 
 @ApplicationScoped
 public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
@@ -16,18 +18,21 @@ public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
 
   @Override
   public void archive(Warehouse warehouse) {
-	  if (warehouse == null) {
-	        throw new IllegalArgumentException("Warehouse must not be null");
-	    }
 
-	    if (!warehouseStore.existsByBusinessUnit(warehouse.businessUnit())) {
-	        throw new IllegalArgumentException(
-	                "Cannot archive non-existing warehouse with business unit: "
-	                        + warehouse.businessUnit()
-	        );
-	    }
+      if (warehouse == null || warehouse.businessUnitCode == null) {
+          throw new IllegalArgumentException("Invalid warehouse for archiving");
+      }
 
-	warehouse.archive();    
-    warehouseStore.update(warehouse);
+      Warehouse existing =
+          warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode);
+
+      if (existing == null) {
+          throw new IllegalArgumentException(
+              "Warehouse not found for business unit: " + warehouse.businessUnitCode
+          );
+      }
+
+      existing.archivedAt = LocalDateTime.now();
+      warehouseStore.update(existing);
   }
 }

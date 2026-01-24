@@ -4,10 +4,12 @@ import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
+@Transactional
 public class WarehouseRepository implements WarehouseStore, PanacheRepository<DbWarehouse> {
 
   private static final Logger LOGGER = Logger.getLogger(WarehouseRepository.class);

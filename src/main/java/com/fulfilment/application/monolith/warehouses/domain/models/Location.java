@@ -1,5 +1,11 @@
 package com.fulfilment.application.monolith.warehouses.domain.models;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
+@Getter
+@Setter
 public class Location {
   public String identification;
 

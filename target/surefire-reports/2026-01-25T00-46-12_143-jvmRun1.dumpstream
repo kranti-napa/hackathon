@@ -1,0 +1,15 @@
+# Created at 2026-01-25T00:47:31.905
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '#'.
+
+# Created at 2026-01-25T00:47:31.929
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '# There is insufficient memory for the Java Runtime Environment to continue.'.
+
+# Created at 2026-01-25T00:47:31.941
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '# Native memory allocation (mmap) failed to map 63963136 bytes for G1 virtual space'.
+
+# Created at 2026-01-25T00:47:31.948
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '# An error report file with more information is saved as:'.
+
+# Created at 2026-01-25T00:47:31.963
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '# C:\Users\Hymavathi\git\hackathon\hs_err_pid10488.log'.
+

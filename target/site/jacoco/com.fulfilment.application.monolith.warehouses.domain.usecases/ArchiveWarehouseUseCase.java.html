@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArchiveWarehouseUseCase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">java-code-assignment</a> &gt; <a href="index.source.html" class="el_package">com.fulfilment.application.monolith.warehouses.domain.usecases</a> &gt; <span class="el_source">ArchiveWarehouseUseCase.java</span></div><h1>ArchiveWarehouseUseCase.java</h1><pre class="source lang-java linenums">package com.fulfilment.application.monolith.warehouses.domain.usecases;
+
+import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
+import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
+import jakarta.enterprise.context.ApplicationScoped;
+import java.time.LocalDateTime;
+
+
+@ApplicationScoped
+public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
+
+  private final WarehouseStore warehouseStore;
+
+<span class="fc" id="L15">  public ArchiveWarehouseUseCase(WarehouseStore warehouseStore) {</span>
+<span class="fc" id="L16">    this.warehouseStore = warehouseStore;</span>
+<span class="fc" id="L17">  }</span>
+
+  @Override
+  public void archive(Warehouse warehouse) {
+
+<span class="fc bfc" id="L22" title="All 4 branches covered.">      if (warehouse == null || warehouse.businessUnitCode == null) {</span>
+<span class="fc" id="L23">          throw new IllegalArgumentException(&quot;Invalid warehouse for archiving&quot;);</span>
+      }
+
+<span class="fc" id="L26">      Warehouse existing =</span>
+<span class="fc" id="L27">          warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode);</span>
+
+<span class="fc bfc" id="L29" title="All 2 branches covered.">      if (existing == null) {</span>
+<span class="fc" id="L30">          throw new IllegalArgumentException(</span>
+              &quot;Warehouse not found for business unit: &quot; + warehouse.businessUnitCode
+          );
+      }
+
+<span class="fc" id="L35">      existing.archivedAt = LocalDateTime.now();</span>
+<span class="fc" id="L36">      warehouseStore.update(existing);</span>
+<span class="fc" id="L37">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

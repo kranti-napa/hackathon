@@ -1,0 +1,24 @@
+# Created at 2026-01-25T01:48:53.891
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '#'.
+
+# Created at 2026-01-25T01:48:54.026
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '# There is insufficient memory for the Java Runtime Environment to continue.'.
+
+# Created at 2026-01-25T01:48:54.030
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '# Native memory allocation (malloc) failed to allocate 812336 bytes for Chunk::new'.
+
+# Created at 2026-01-25T01:48:54.034
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '# An error report file with more information is saved as:'.
+
+# Created at 2026-01-25T01:48:54.037
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '# C:\Users\Hymavathi\git\hackathon\hs_err_pid22064.log'.
+
+# Created at 2026-01-25T01:48:54.039
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '#'.
+
+# Created at 2026-01-25T01:48:54.042
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '# Compiler replay data is saved as:'.
+
+# Created at 2026-01-25T01:48:54.065
+Corrupted channel by directly writing to native stream in forked JVM 1. Stream '# C:\Users\Hymavathi\git\hackathon\replay_pid22064.log'.
+
