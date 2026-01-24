@@ -16,8 +16,18 @@ public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
 
   @Override
   public void archive(Warehouse warehouse) {
-    // TODO implement this method
+	  if (warehouse == null) {
+	        throw new IllegalArgumentException("Warehouse must not be null");
+	    }
 
+	    if (!warehouseStore.existsByBusinessUnit(warehouse.businessUnit())) {
+	        throw new IllegalArgumentException(
+	                "Cannot archive non-existing warehouse with business unit: "
+	                        + warehouse.businessUnit()
+	        );
+	    }
+
+	warehouse.archive();    
     warehouseStore.update(warehouse);
   }
 }
