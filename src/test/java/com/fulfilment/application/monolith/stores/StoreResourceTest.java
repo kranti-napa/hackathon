@@ -108,4 +108,76 @@ class StoreResourceTest {
         .then()
             .statusCode(200)
             .body("name", equalTo("Updated"))
-            .body("quantityProductsInStock", equalTo(20)
+            .body("quantityProductsInStock", equalTo(20));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUpdatingWithNullBody() {
+        given()
+            .contentType(ContentType.JSON)
+        .when()
+            .put("/store/1")
+        .then()
+            .statusCode(400)
+            .body(containsString("Store Name was not set"));
+    }
+
+    // ---------- PATCH ----------
+
+    @Test
+    void shouldPatchOnlyName() {
+        Long id = createStore("Initial", 50);
+
+        Store patch = new Store();
+        patch.name = "Patched";
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(patch)
+        .when()
+            .patch("/store/" + id)
+        .then()
+            .statusCode(200)
+            .body("name", equalTo("Patched"))
+            .body("quantityProductsInStock", equalTo(50));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPatchBodyIsNull() {
+        given()
+            .contentType(ContentType.JSON)
+        .when()
+            .patch("/store/1")
+        .then()
+            .statusCode(400)
+            .body(containsString("Request body was empty"));
+    }
+
+    // ---------- DELETE ----------
+
+    @Test
+    void shouldDeleteStoreSuccessfully() {
+        Long id = createStore("Delete Me", 1);
+
+        given()
+            .when()
+            .delete("/store/" + id)
+        .then()
+            .statusCode(204);
+
+        given()
+            .when()
+            .get("/store/" + id)
+        .then()
+            .statusCode(404);
+    }
+
+    @Test
+    void shouldReturn404WhenDeletingNonExistingStore() {
+        given()
+            .when()
+            .delete("/store/999999")
+            .then()
+            .statusCode(404);
+    }
+}
