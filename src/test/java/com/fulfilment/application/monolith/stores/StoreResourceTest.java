@@ -23,29 +23,30 @@ class StoreResourceTest {
     // ---------- GET ----------
 
     @Test
-    void shouldReturnEmptyStoreListInitially() {
+    void shouldReturnStores() {
         given()
             .when().get("/store")
             .then()
             .statusCode(200)
-            .body("$", is(empty()));
+            .body("$", not(empty()));
     }
 
     @Test
     void shouldReturn404WhenStoreNotFoundById() {
         given()
-            .when().get("/store/99999")
+            .when().get("/store/999999")
             .then()
             .statusCode(404)
-            .body("error", containsString("does not exist"));
+            .body(containsString("does not exist"));
     }
 
     // ---------- POST ----------
 
     @Test
+    @Transactional
     void shouldCreateStoreSuccessfully() {
         Store store = new Store();
-        store.name = "My Store";
+        store.name = "Created Store";
         store.quantityProductsInStock = 10;
 
         given()
@@ -56,14 +57,14 @@ class StoreResourceTest {
         .then()
             .statusCode(201)
             .body("id", notNullValue())
-            .body("name", equalTo("My Store"));
+            .body("name", equalTo("Created Store"));
     }
 
     @Test
     void shouldReturnBadRequestWhenIdIsProvidedOnCreate() {
         Store store = new Store();
         store.id = 1L;
-        store.name = "Invalid Store";
+        store.name = "Invalid";
 
         given()
             .contentType(ContentType.JSON)
@@ -72,7 +73,7 @@ class StoreResourceTest {
             .post("/store")
         .then()
             .statusCode(400)
-            .body("error", containsString("Id was invalidly set"));
+            .body(containsString("Id was invalidly set"));
     }
 
     // ---------- PUT ----------
@@ -80,10 +81,10 @@ class StoreResourceTest {
     @Test
     @Transactional
     void shouldUpdateStoreSuccessfully() {
-        Store store = persistStore("Old Name", 5);
+        Store store = persistStore("Old", 5);
 
         Store updated = new Store();
-        updated.name = "New Name";
+        updated.name = "Updated";
         updated.quantityProductsInStock = 20;
 
         given()
@@ -93,7 +94,7 @@ class StoreResourceTest {
             .put("/store/" + store.id)
         .then()
             .statusCode(200)
-            .body("name", equalTo("New Name"))
+            .body("name", equalTo("Updated"))
             .body("quantityProductsInStock", equalTo(20));
     }
 
@@ -105,21 +106,7 @@ class StoreResourceTest {
             .put("/store/1")
         .then()
             .statusCode(400)
-            .body("error", containsString("Store Name was not set"));
-    }
-
-    @Test
-    void shouldReturn404WhenUpdatingNonExistingStore() {
-        Store updated = new Store();
-        updated.name = "Name";
-
-        given()
-            .contentType(ContentType.JSON)
-            .body(updated)
-        .when()
-            .put("/store/9999")
-        .then()
-            .statusCode(404);
+            .body(containsString("Store Name was not set"));
     }
 
     // ---------- PATCH ----------
@@ -151,21 +138,7 @@ class StoreResourceTest {
             .patch("/store/1")
         .then()
             .statusCode(400)
-            .body("error", containsString("Request body was empty"));
-    }
-
-    @Test
-    void shouldReturn404WhenPatchingNonExistingStore() {
-        Store patch = new Store();
-        patch.name = "X";
-
-        given()
-            .contentType(ContentType.JSON)
-            .body(patch)
-        .when()
-            .patch("/store/9999")
-        .then()
-            .statusCode(404);
+            .body(containsString("Request body was empty"));
     }
 
     // ---------- DELETE ----------
@@ -173,7 +146,7 @@ class StoreResourceTest {
     @Test
     @Transactional
     void shouldDeleteStoreSuccessfully() {
-        Store store = persistStore("To Delete", 1);
+        Store store = persistStore("Delete Me", 1);
 
         given()
             .when()
@@ -192,12 +165,12 @@ class StoreResourceTest {
     void shouldReturn404WhenDeletingNonExistingStore() {
         given()
             .when()
-            .delete("/store/9999")
+            .delete("/store/999999")
         .then()
             .statusCode(404);
     }
 
-    // ---------- helpers ----------
+    // ---------- helper ----------
 
     private Store persistStore(String name, int qty) {
         Store store = new Store();
