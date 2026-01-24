@@ -16,20 +16,32 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
 
   @Override
   public void create(Warehouse warehouse) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'create'");
+	  DbWarehouse dbWarehouse = DbWarehouse.fromWarehouse(warehouse);
+      persist(dbWarehouse);
   }
 
   @Override
   public void update(Warehouse warehouse) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'replace'");
+	  DbWarehouse existing =
+              find("businessUnitCode", warehouse.businessUnit()).firstResult();
+
+      if (existing == null) {
+          throw new IllegalArgumentException(
+                  "Warehouse not found with business unit: " + warehouse.businessUnit());
+      }
+
+      existing.updateFromDomain(warehouse);
+      persist(existing);
   }
 
   @Override
   public void remove(Warehouse warehouse) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'remove'");
+	  DbWarehouse existing =
+              find("businessUnitCode", warehouse.businessUnit()).firstResult();
+
+      if (existing != null) {
+          delete(existing);
+      }
   }
 
   @Override
