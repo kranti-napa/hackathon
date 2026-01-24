@@ -6,6 +6,7 @@ import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 import jakarta.transaction.Synchronization;
+import jakarta.ws.rs.PathParam;
 import jakarta.transaction.Status;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -44,10 +45,11 @@ public class StoreResource {
 
   @GET
   @Path("{id}")
-  public Store getSingle(Long id) {
+  public Store getSingle(@PathParam("id") Long id) {
+    LOGGER.debugf("getSingle called with id=%s", id);
     Store entity = Store.findById(id);
     if (entity == null) {
-      throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
+      throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
     }
     return entity;
   }
@@ -55,50 +57,61 @@ public class StoreResource {
   @POST
   @Transactional
   public Response create(Store store) {
+    LOGGER.debugf("create called for store=%s", store == null ? "<null>" : store.name);
     if (store.id != null) {
-      throw new WebApplicationException("Id was invalidly set on request.", 422);
+  throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity("Id was invalidly set on request.").build());
     }
 
     store.persist();
 
-    //legacyStoreManagerGateway.createStoreOnLegacySystem(store);
+    // Schedule legacy side-effect after the transaction commits
     txRegistry.registerInterposedSynchronization(new Synchronization() {
 
-        @Override
-        public void beforeCompletion() {
-            // no-op
-        }
+      @Override
+      public void beforeCompletion() {
+        // no-op
+      }
 
-        @Override
-        public void afterCompletion(int status) {
-            if (status == Status.STATUS_COMMITTED) {
-                legacyStoreManagerGateway.sync(store);
-            }
+      @Override
+      public void afterCompletion(int status) {
+        if (status == Status.STATUS_COMMITTED) {
+          legacyStoreManagerGateway.createStoreOnLegacySystem(store);
         }
+      }
     });
 
-
-    return Response.ok(store).status(201).build();
+    return Response.status(Response.Status.CREATED).entity(store).build();
   }
 
   @PUT
   @Path("{id}")
   @Transactional
-  public Store update(Long id, Store updatedStore) {
-    if (updatedStore.name == null) {
-      throw new WebApplicationException("Store Name was not set on request.", 422);
+  public Store update(@PathParam("id") Long id, Store updatedStore) {
+    LOGGER.debugf("update called for id=%s newName=%s", id, updatedStore == null ? "<null>" : updatedStore.name);
+    if (updatedStore == null || updatedStore.name == null) {
+      throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity("Store Name was not set on request.").build());
     }
 
     Store entity = Store.findById(id);
 
     if (entity == null) {
-      throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
+      throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
     }
 
     entity.name = updatedStore.name;
     entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
 
-    legacyStoreManagerGateway.updateStoreOnLegacySystem(updatedStore);
+    txRegistry.registerInterposedSynchronization(new Synchronization() {
+      @Override
+      public void beforeCompletion() {}
+
+      @Override
+      public void afterCompletion(int status) {
+        if (status == Status.STATUS_COMMITTED) {
+          legacyStoreManagerGateway.updateStoreOnLegacySystem(entity);
+        }
+      }
+    });
 
     return entity;
   }
@@ -106,26 +119,39 @@ public class StoreResource {
   @PATCH
   @Path("{id}")
   @Transactional
-  public Store patch(Long id, Store updatedStore) {
-    if (updatedStore.name == null) {
-      throw new WebApplicationException("Store Name was not set on request.", 422);
+  public Store patch(@PathParam("id") Long id, Store updatedStore) {
+    LOGGER.debugf("patch called for id=%s", id);
+    if (updatedStore == null) {
+      throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity("Request body was empty.").build());
     }
 
     Store entity = Store.findById(id);
 
     if (entity == null) {
-      throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
+      throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
     }
 
-    if (entity.name != null) {
+    // apply partial updates only when the incoming values are provided
+    if (updatedStore.name != null) {
       entity.name = updatedStore.name;
     }
 
-    if (entity.quantityProductsInStock != 0) {
+    // update quantity only when caller provided a non-zero value
+    if (updatedStore.quantityProductsInStock != 0) {
       entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
     }
 
-    legacyStoreManagerGateway.updateStoreOnLegacySystem(updatedStore);
+    txRegistry.registerInterposedSynchronization(new Synchronization() {
+      @Override
+      public void beforeCompletion() {}
+
+      @Override
+      public void afterCompletion(int status) {
+        if (status == Status.STATUS_COMMITTED) {
+          legacyStoreManagerGateway.updateStoreOnLegacySystem(entity);
+        }
+      }
+    });
 
     return entity;
   }
@@ -133,13 +159,14 @@ public class StoreResource {
   @DELETE
   @Path("{id}")
   @Transactional
-  public Response delete(Long id) {
+  public Response delete(@PathParam("id") Long id) {
+    LOGGER.debugf("delete called for id=%s", id);
     Store entity = Store.findById(id);
     if (entity == null) {
-      throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
+      throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
     }
     entity.delete();
-    return Response.status(204).build();
+    return Response.status(Response.Status.NO_CONTENT).build();
   }
 
   @Provider
