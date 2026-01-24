@@ -1,3 +1,4 @@
+
 name: Java Spring Boot CI
 
 # Trigger the workflow on push or pull request to main branch
@@ -35,3 +36,4 @@ jobs:
       # Step 5 (Optional): Package JAR
       - name: Package JAR
         run: mvn package
+        
