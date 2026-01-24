@@ -1,39 +1,38 @@
+name: Java CI (Quarkus)
 
-name: Java Spring Boot CI
-
-# Trigger the workflow on push or pull request to main branch
+# Trigger the workflow on push or pull request to the default branches
 on:
   push:
-    branches: [ main ]
+    branches: [ master, main ]
   pull_request:
-    branches: [ main ]
+    branches: [ master, main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the code
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # Step 2: Set up JDK
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin' # OpenJDK
-          java-version: '17'      # Change to your Java version
+          distribution: temurin
+          java-version: '17'
           cache: maven
 
-      # Step 3: Build with Maven
-      - name: Build with Maven
-        run: mvn clean install --no-transfer-progress
+      - name: Run Maven unit tests (uses wrapper)
+        run: ./mvnw -B -DskipTests=false test
+        env:
+          MAVEN_OPTS: -Xmx2g
 
-      # Step 4: Run tests
-      - name: Run tests
-        run: mvn test
+      - name: Package (skip tests)
+        run: ./mvnw -B -DskipTests package
 
-      # Step 5 (Optional): Package JAR
-      - name: Package JAR
-        run: mvn package
-        
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: jacoco-report
+          path: target/site/jacoco
