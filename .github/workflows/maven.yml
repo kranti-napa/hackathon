@@ -1,48 +1,37 @@
-name: Java CI with Maven
+name: Java Spring Boot CI
 
+# Trigger the workflow on push or pull request to main branch
 on:
   push:
-    branches: [ "master" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:
-      # Quarkus often requires a database for tests. 
-      # This sets up a PostgreSQL container as defined in your README.
-      postgres:
-        image: postgres:13.3
-        env:
-          POSTGRES_USER: quarkus_test
-          POSTGRES_PASSWORD: quarkus_test
-          POSTGRES_DB: quarkus_test
-        ports:
-          - 5432:5432
-        # Wait for postgres to be ready before starting the build
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
-    - uses: actions/checkout@v4
+      # Step 1: Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
+      # Step 2: Set up JDK
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # OpenJDK
+          java-version: '17'      # Change to your Java version
+          cache: maven
 
-    - name: Build with Maven
-      run: ./mvnw -B package --file pom.xml
+      # Step 3: Build with Maven
+      - name: Build with Maven
+        run: mvn clean install --no-transfer-progress
 
-    - name: Upload Build Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: quarkus-app
-        path: target/quarkus-app/
+      # Step 4: Run tests
+      - name: Run tests
+        run: mvn test
+
+      # Step 5 (Optional): Package JAR
+      - name: Package JAR
+        run: mvn package
