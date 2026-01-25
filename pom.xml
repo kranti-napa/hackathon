@@ -125,6 +125,13 @@
     <groupId>org.jacoco</groupId>
     <artifactId>jacoco-maven-plugin</artifactId>
     <version>0.8.11</version>
+    <configuration>
+    <excludes>
+      <exclude>**/*_ClientProxy.class</exclude>
+      <exclude>**/*Resource*.class</exclude>
+      <exclude>**/*Adapter*.class</exclude>
+    </excludes>
+  </configuration>
     <executions>
         <execution>
             <id>prepare-agent</id>
@@ -139,14 +146,7 @@
                 <goal>report</goal>
             </goals>
         </execution>
-        <configuration>
-  <excludes>
-    <exclude>**/*_ClientProxy.class</exclude>
-    <exclude>**/*Resource*.class</exclude>
-    <exclude>**/*Adapter*.class</exclude>
-  </excludes>
-</configuration>
-    </executions>
+    
 </plugin>
         </plugins>
         
