@@ -1,6 +1,7 @@
 package com.fulfilment.application.monolith.warehouses.adapters.database;
 
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
@@ -72,10 +73,13 @@ class WarehouseRepositorySpyTest {
         DbWarehouse existing = new DbWarehouse();
         existing.businessUnitCode = "BU3";
 
-        doReturn(existing)
-            .when(repo)
-            .find("businessUnitCode", "BU3")
-            .firstResult();
+        PanacheQuery<DbWarehouse> query = mock(PanacheQuery.class);
+
+        doReturn(query)
+                .when(repo)
+                .find("businessUnitCode", "BU3");
+
+        when(query.firstResult()).thenReturn(existing);
 
         doNothing().when(repo).persist(existing);
 
@@ -97,10 +101,13 @@ class WarehouseRepositorySpyTest {
         WarehouseRepository repo = spyRepo();
         Warehouse warehouse = warehouse("BU404");
 
-        doReturn(null)
-            .when(repo)
-            .find("businessUnitCode", "BU404")
-            .firstResult();
+        PanacheQuery<DbWarehouse> query = mock(PanacheQuery.class);
+
+        doReturn(query)
+                .when(repo)
+                .find("businessUnitCode", "BU404");
+
+        when(query.firstResult()).thenReturn(null);
 
         assertThrows(IllegalArgumentException.class,
                 () -> repo.update(warehouse));
@@ -116,10 +123,13 @@ class WarehouseRepositorySpyTest {
         DbWarehouse existing = new DbWarehouse();
         existing.businessUnitCode = "BU5";
 
-        doReturn(existing)
-            .when(repo)
-            .find("businessUnitCode", "BU5")
-            .firstResult();
+        PanacheQuery<DbWarehouse> query = mock(PanacheQuery.class);
+
+        doReturn(query)
+                .when(repo)
+                .find("businessUnitCode", "BU5");
+
+        when(query.firstResult()).thenReturn(existing);
 
         doNothing().when(repo).delete(existing);
 
@@ -142,10 +152,13 @@ class WarehouseRepositorySpyTest {
         WarehouseRepository repo = spyRepo();
         Warehouse warehouse = warehouse("BU6");
 
-        doReturn(null)
-            .when(repo)
-            .find("businessUnitCode", "BU6")
-            .firstResult();
+        PanacheQuery<DbWarehouse> query = mock(PanacheQuery.class);
+
+        doReturn(query)
+                .when(repo)
+                .find("businessUnitCode", "BU6");
+
+        when(query.firstResult()).thenReturn(null);
 
         repo.remove(warehouse);
 
@@ -165,10 +178,13 @@ class WarehouseRepositorySpyTest {
     void findByBusinessUnitCode_shouldReturnNullWhenMissing() {
         WarehouseRepository repo = spyRepo();
 
-        doReturn(null)
-            .when(repo)
-            .find("businessUnitCode", "BU404")
-            .firstResult();
+        PanacheQuery<DbWarehouse> query = mock(PanacheQuery.class);
+
+        doReturn(query)
+                .when(repo)
+                .find("businessUnitCode", "BU404");
+
+        when(query.firstResult()).thenReturn(null);
 
         assertNull(repo.findByBusinessUnitCode("BU404"));
     }
@@ -180,10 +196,13 @@ class WarehouseRepositorySpyTest {
         DbWarehouse db = new DbWarehouse();
         db.businessUnitCode = "BU7";
 
-        doReturn(db)
-            .when(repo)
-            .find("businessUnitCode", "BU7")
-            .firstResult();
+        PanacheQuery<DbWarehouse> query = mock(PanacheQuery.class);
+
+        doReturn(query)
+                .when(repo)
+                .find("businessUnitCode", "BU7");
+
+        when(query.firstResult()).thenReturn(db);
 
         Warehouse result = repo.findByBusinessUnitCode("BU7");
 
@@ -204,4 +223,3 @@ class WarehouseRepositorySpyTest {
         return w;
     }
 }
-
