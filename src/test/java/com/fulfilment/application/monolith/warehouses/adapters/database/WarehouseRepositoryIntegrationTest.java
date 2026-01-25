@@ -138,4 +138,28 @@ class WarehouseRepositoryIntegrationTest {
         w.archivedAt = null;
         return w;
     }
+    @Test
+@Transactional
+void update_and_remove_shouldHitRemainingBranches() {
+    Warehouse w = warehouse("BU_BRANCH");
+
+    // create
+    repository.create(w);
+
+    // update existing (hits "existing != null" branch)
+    w.location = "UPDATED";
+    w.stock = 50;
+    repository.update(w);
+
+    Warehouse updated = repository.findByBusinessUnitCode("BU_BRANCH");
+    assertEquals("UPDATED", updated.location);
+    assertEquals(50, updated.stock);
+
+    // remove existing (hits delete branch)
+    repository.remove(w);
+
+    Warehouse deleted = repository.findByBusinessUnitCode("BU_BRANCH");
+    assertNull(deleted);
+}
+
 }
