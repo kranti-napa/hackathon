@@ -139,6 +139,13 @@
                 <goal>report</goal>
             </goals>
         </execution>
+        <configuration>
+  <excludes>
+    <exclude>**/*_ClientProxy.class</exclude>
+    <exclude>**/*Resource*.class</exclude>
+    <exclude>**/*Adapter*.class</exclude>
+  </excludes>
+</configuration>
     </executions>
 </plugin>
         </plugins>
