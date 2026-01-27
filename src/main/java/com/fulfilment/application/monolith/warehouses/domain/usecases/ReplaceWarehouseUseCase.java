@@ -1,5 +1,9 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
+import com.fulfilment.application.monolith.common.AppConstants;
+import com.fulfilment.application.monolith.common.exceptions.ConflictException;
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ReplaceWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
@@ -17,24 +21,26 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
 	    @Override
 	    public void replace(Warehouse newWarehouse) {
 
+			if (newWarehouse == null || newWarehouse.businessUnitCode == null) {
+				throw new ValidationException(AppConstants.ERR_WAREHOUSE_NULL);
+			}
+
 	        Warehouse existing =
 	            warehouseStore.findByBusinessUnitCode(newWarehouse.businessUnitCode);
 
 	        if (existing == null) {
-	            throw new IllegalArgumentException(
-	                "Warehouse not found for business unit: " + newWarehouse.businessUnitCode
+	            throw new NotFoundException(
+	                String.format(AppConstants.ERR_WAREHOUSE_NOT_FOUND, newWarehouse.businessUnitCode)
 	            );
 	        }
 
 	        // Stock must match previous warehouse
 	        if (!existing.stock.equals(newWarehouse.stock)) {
-	            throw new IllegalArgumentException(
-	                "Stock must remain unchanged when replacing a warehouse"
-	            );
+	            throw new ConflictException(AppConstants.ERR_WAREHOUSE_STOCK_IMMUTABLE);
 	        }
 
 	        if (newWarehouse.capacity == null || newWarehouse.capacity <= 0) {
-	            throw new IllegalArgumentException("Capacity must be greater than zero");
+	            throw new ValidationException(AppConstants.ERR_WAREHOUSE_CAPACITY_REQUIRED);
 	        }
 
 	        warehouseStore.update(newWarehouse);

@@ -2,6 +2,9 @@ package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fulfilment.application.monolith.common.exceptions.ConflictException;
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.usecases.testhelpers.InMemoryWarehouseStore;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +49,7 @@ public class ReplaceWarehouseUseCaseTest {
     replacement.capacity = 10;
     replacement.stock = 0;
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.replace(replacement));
+    assertThrows(NotFoundException.class, () -> useCase.replace(replacement));
   }
 
   @Test
@@ -62,7 +65,7 @@ public class ReplaceWarehouseUseCaseTest {
     replacement.capacity = 12;
     replacement.stock = 3; // different
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.replace(replacement));
+    assertThrows(ConflictException.class, () -> useCase.replace(replacement));
   }
 
   @Test
@@ -78,6 +81,6 @@ public class ReplaceWarehouseUseCaseTest {
     replacement.capacity = 0; // invalid
     replacement.stock = 1;
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.replace(replacement));
+    assertThrows(ValidationException.class, () -> useCase.replace(replacement));
   }
 }

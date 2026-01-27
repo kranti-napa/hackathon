@@ -2,6 +2,8 @@ package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.usecases.testhelpers.InMemoryWarehouseStore;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,17 +40,17 @@ public class ArchiveWarehouseUseCaseTest {
 
   @Test
   public void testArchiveInvalidWarehouseThrows() {
-    assertThrows(IllegalArgumentException.class, () -> useCase.archive(null));
+    assertThrows(ValidationException.class, () -> useCase.archive(null));
 
     Warehouse w = new Warehouse();
     // missing businessUnitCode
-    assertThrows(IllegalArgumentException.class, () -> useCase.archive(w));
+    assertThrows(ValidationException.class, () -> useCase.archive(w));
   }
 
   @Test
   public void testArchiveNotFoundThrows() {
     Warehouse w = new Warehouse();
     w.businessUnitCode = "NOPE";
-    assertThrows(IllegalArgumentException.class, () -> useCase.archive(w));
+    assertThrows(NotFoundException.class, () -> useCase.archive(w));
   }
 }

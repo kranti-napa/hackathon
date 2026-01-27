@@ -1,0 +1,7 @@
+package com.fulfilment.application.monolith.common.exceptions;
+
+public abstract class DomainException extends RuntimeException {
+    protected DomainException(String message) {
+        super(message);
+    }
+}

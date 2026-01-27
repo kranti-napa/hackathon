@@ -2,6 +2,8 @@ package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fulfilment.application.monolith.common.exceptions.ConflictException;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import com.fulfilment.application.monolith.location.LocationGateway;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.usecases.testhelpers.InMemoryWarehouseStore;
@@ -48,7 +50,7 @@ public class CreateWarehouseUseCaseTest {
     w.capacity = 5;
     w.stock = 1;
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.create(w));
+    assertThrows(ConflictException.class, () -> useCase.create(w));
   }
 
   @Test
@@ -59,7 +61,7 @@ public class CreateWarehouseUseCaseTest {
     w.capacity = 0;
     w.stock = 1;
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.create(w));
+    assertThrows(ValidationException.class, () -> useCase.create(w));
   }
 
   @Test
@@ -70,7 +72,7 @@ public class CreateWarehouseUseCaseTest {
     w.capacity = 5;
     w.stock = -1;
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.create(w));
+    assertThrows(ValidationException.class, () -> useCase.create(w));
   }
 
   @Test
@@ -89,6 +91,6 @@ public class CreateWarehouseUseCaseTest {
     w.capacity = 5;
     w.stock = 0;
 
-    assertThrows(IllegalStateException.class, () -> useCase.create(w));
+    assertThrows(ConflictException.class, () -> useCase.create(w));
   }
 }

@@ -1,5 +1,7 @@
 package com.fulfilment.application.monolith.fulfilment.domain.usecases;
 
+import com.fulfilment.application.monolith.common.AppConstants;
+import com.fulfilment.application.monolith.common.exceptions.ConflictException;
 import com.fulfilment.application.monolith.fulfilment.domain.FulfilmentAssignment;
 import com.fulfilment.application.monolith.fulfilment.domain.ports.FulfilmentAssignmentStore;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -31,8 +33,8 @@ public class AssignWarehouseToStoreProductUseCase {
                .count();
 
         if (warehousesForProductInStore >= 2) {
-            throw new IllegalStateException(
-                "Product can be fulfilled by max 2 warehouses per store");
+            throw new ConflictException(
+                AppConstants.ERR_ASSIGN_MAX_WAREHOUSES_PER_PRODUCT);
         }
 
         // Constraint 2:
@@ -45,8 +47,8 @@ public class AssignWarehouseToStoreProductUseCase {
                .count();
 
         if (warehousesForStore >= 3) {
-            throw new IllegalStateException(
-                "Store can be fulfilled by max 3 warehouses");
+            throw new ConflictException(
+                AppConstants.ERR_ASSIGN_MAX_WAREHOUSES_PER_STORE);
         }
 
         // Constraint 3:
@@ -60,8 +62,8 @@ public class AssignWarehouseToStoreProductUseCase {
                .count();
 
         if (productsInWarehouse >= 5) {
-            throw new IllegalStateException(
-                "Warehouse can store max 5 products");
+            throw new ConflictException(
+                AppConstants.ERR_ASSIGN_MAX_PRODUCTS_PER_WAREHOUSE);
         }
 
         assignmentStore.create(
