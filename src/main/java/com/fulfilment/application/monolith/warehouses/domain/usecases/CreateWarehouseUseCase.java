@@ -1,5 +1,8 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
+import com.fulfilment.application.monolith.common.AppConstants;
+import com.fulfilment.application.monolith.common.exceptions.ConflictException;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.CreateWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
@@ -24,13 +27,16 @@ public class CreateWarehouseUseCase implements CreateWarehouseOperation {
     @Override
     public void create(Warehouse warehouse) {
 
+        if (warehouse == null) {
+            throw new ValidationException(AppConstants.ERR_WAREHOUSE_NULL);
+        }
+
         // 1. Business Unit Code Verification
         Warehouse existing =
                 warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode);
 
         if (existing != null) {
-            throw new IllegalArgumentException(
-                    "Warehouse with business unit code already exists");
+            throw new ConflictException(AppConstants.ERR_WAREHOUSE_ALREADY_EXISTS);
         }
 
         // 2. Location Validation
@@ -43,18 +49,17 @@ public class CreateWarehouseUseCase implements CreateWarehouseOperation {
                 .count();
 
         if (warehousesInLocation >= location.maxNumberOfWarehouses) {
-            throw new IllegalStateException(
-                    "Maximum number of warehouses reached for location");
+            throw new ConflictException(AppConstants.ERR_WAREHOUSE_MAX_PER_LOCATION);
         }
 
         // 4. Capacity Validation
         if (warehouse.capacity == null || warehouse.capacity <= 0) {
-            throw new IllegalArgumentException("Invalid warehouse capacity");
+            throw new ValidationException(AppConstants.ERR_WAREHOUSE_INVALID_CAPACITY);
         }
 
         // 5. Stock Validation
         if (warehouse.stock == null || warehouse.stock < 0) {
-            throw new IllegalArgumentException("Invalid warehouse stock");
+            throw new ValidationException(AppConstants.ERR_WAREHOUSE_INVALID_STOCK);
         }
 
         warehouse.createdAt = LocalDateTime.now();

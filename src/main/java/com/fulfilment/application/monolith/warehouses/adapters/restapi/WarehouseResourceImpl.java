@@ -1,11 +1,13 @@
 package com.fulfilment.application.monolith.warehouses.adapters.restapi;
 
+import com.fulfilment.application.monolith.common.AppConstants;
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
 import com.warehouse.api.WarehouseResource;
 import com.warehouse.api.beans.Warehouse;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import jakarta.validation.constraints.NotNull;
@@ -20,6 +22,12 @@ public class WarehouseResourceImpl implements WarehouseResource {
 
     @Inject
     WarehouseRepository warehouseRepository;
+
+    private static final String LOG_GET_BY_ID = "getAWarehouseUnitByID called bu=%s";
+    private static final String LOG_CREATE = "createANewWarehouseUnit created bu=%s";
+    private static final String LOG_REPLACE = "replaceTheCurrentActiveWarehouse for bu=%s";
+    private static final String LOG_ARCHIVE = "archiveAWarehouseUnitByID called bu=%s";
+    private static final String LOG_NULL = "<null>";
 
     private static final Logger LOGGER = Logger.getLogger(WarehouseResourceImpl.class);
 
@@ -41,7 +49,11 @@ public class WarehouseResourceImpl implements WarehouseResource {
     @Override
     public com.warehouse.api.beans.Warehouse getAWarehouseUnitByID(String businessUnitCode) {
 
-        LOGGER.debugf("getAWarehouseUnitByID called bu=%s", businessUnitCode);
+        LOGGER.debugf(LOG_GET_BY_ID, businessUnitCode);
+
+        if (businessUnitCode == null) {
+            throw new ValidationException(AppConstants.ERR_WAREHOUSE_NULL);
+        }
 
         for (com.fulfilment.application.monolith.warehouses.domain.models.Warehouse d
                 : warehouseRepository.getAll()) {
@@ -51,7 +63,9 @@ public class WarehouseResourceImpl implements WarehouseResource {
             }
         }
 
-    throw new IllegalArgumentException("Warehouse not found with businessUnitCode: " + businessUnitCode);
+        throw new NotFoundException(
+            String.format(AppConstants.ERR_WAREHOUSE_NOT_FOUND, businessUnitCode)
+        );
 
     }
 
@@ -59,13 +73,17 @@ public class WarehouseResourceImpl implements WarehouseResource {
     public com.warehouse.api.beans.Warehouse createANewWarehouseUnit(
             @NotNull com.warehouse.api.beans.Warehouse api) {
 
+        if (api == null) {
+            throw new ValidationException(AppConstants.ERR_WAREHOUSE_NULL);
+        }
+
         com.fulfilment.application.monolith.warehouses.domain.models.Warehouse d =
                 toDomain(api);
 
         d.createdAt = LocalDateTime.now();
         warehouseRepository.create(d);
-    LOGGER.debugf("createANewWarehouseUnit created bu=%s", api == null ? "<null>" : api.getBusinessUnitCode());
-    return api;
+        LOGGER.debugf(LOG_CREATE, api.getBusinessUnitCode() == null ? LOG_NULL : api.getBusinessUnitCode());
+        return api;
     }
 
     @Override
@@ -73,19 +91,27 @@ public class WarehouseResourceImpl implements WarehouseResource {
             String businessUnitCode,
             @NotNull com.warehouse.api.beans.Warehouse api) {
 
+        if (businessUnitCode == null || api == null) {
+            throw new ValidationException(AppConstants.ERR_WAREHOUSE_NULL);
+        }
+
         com.fulfilment.application.monolith.warehouses.domain.models.Warehouse d =
                 toDomain(api);
 
         d.businessUnitCode = businessUnitCode;
         warehouseRepository.update(d);
-    LOGGER.debugf("replaceTheCurrentActiveWarehouse for bu=%s", businessUnitCode);
-    return api;
+        LOGGER.debugf(LOG_REPLACE, businessUnitCode);
+        return api;
     }
 
     @Override
     public void archiveAWarehouseUnitByID(String businessUnitCode) {
 
-        LOGGER.debugf("archiveAWarehouseUnitByID called bu=%s", businessUnitCode);
+        LOGGER.debugf(LOG_ARCHIVE, businessUnitCode);
+
+        if (businessUnitCode == null) {
+            throw new ValidationException(AppConstants.ERR_WAREHOUSE_NULL);
+        }
 
         for (com.fulfilment.application.monolith.warehouses.domain.models.Warehouse d
                 : warehouseRepository.getAll()) {
@@ -97,7 +123,9 @@ public class WarehouseResourceImpl implements WarehouseResource {
             }
         }
 
-    throw new IllegalArgumentException("Warehouse not found with businessUnitCode: " + businessUnitCode);
+        throw new NotFoundException(
+            String.format(AppConstants.ERR_WAREHOUSE_NOT_FOUND, businessUnitCode)
+        );
     }
 
     // ---------- MAPPERS ----------

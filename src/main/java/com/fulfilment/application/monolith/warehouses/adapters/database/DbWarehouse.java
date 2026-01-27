@@ -9,9 +9,11 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "warehouse")
+@Table(name = DbWarehouse.TABLE_NAME)
 @Cacheable
 public class DbWarehouse {
+
+  static final String TABLE_NAME = "warehouse";
 
   @Id @GeneratedValue public Long id;
 

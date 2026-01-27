@@ -11,6 +11,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
+
 @QuarkusTest
 class WarehouseRepositoryIntegrationTest {
 
@@ -72,7 +75,7 @@ class WarehouseRepositoryIntegrationTest {
 
     @Test
     void update_shouldThrowWhenWarehouseIsNull() {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(ValidationException.class,
                 () -> repository.update(null));
     }
 
@@ -80,7 +83,7 @@ class WarehouseRepositoryIntegrationTest {
     void update_shouldThrowWhenWarehouseNotFound() {
         Warehouse w = warehouse("BU404");
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(NotFoundException.class,
                 () -> repository.update(w));
     }
 

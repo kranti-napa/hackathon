@@ -2,6 +2,9 @@ package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fulfilment.application.monolith.common.exceptions.ConflictException;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
 import com.fulfilment.application.monolith.location.LocationGateway;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.usecases.testhelpers.InMemoryWarehouseStore;
@@ -48,7 +51,7 @@ public class CreateWarehouseUseCaseTest {
     w.capacity = 5;
     w.stock = 1;
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.create(w));
+    assertThrows(ConflictException.class, () -> useCase.create(w));
   }
 
   @Test
@@ -59,7 +62,7 @@ public class CreateWarehouseUseCaseTest {
     w.capacity = 0;
     w.stock = 1;
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.create(w));
+    assertThrows(ValidationException.class, () -> useCase.create(w));
   }
 
   @Test
@@ -70,7 +73,7 @@ public class CreateWarehouseUseCaseTest {
     w.capacity = 5;
     w.stock = -1;
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.create(w));
+    assertThrows(ValidationException.class, () -> useCase.create(w));
   }
 
   @Test
@@ -89,6 +92,44 @@ public class CreateWarehouseUseCaseTest {
     w.capacity = 5;
     w.stock = 0;
 
-    assertThrows(IllegalStateException.class, () -> useCase.create(w));
+    assertThrows(ConflictException.class, () -> useCase.create(w));
+  }
+
+  @Test
+  public void testCreateNullWarehouseThrows() {
+    assertThrows(ValidationException.class, () -> useCase.create(null));
+  }
+
+  @Test
+  public void testCreateNullCapacityThrows() {
+    Warehouse w = new Warehouse();
+    w.businessUnitCode = "BU-NOCAP";
+    w.location = "AMSTERDAM-001";
+    w.capacity = null;
+    w.stock = 1;
+
+    assertThrows(ValidationException.class, () -> useCase.create(w));
+  }
+
+  @Test
+  public void testCreateNullStockThrows() {
+    Warehouse w = new Warehouse();
+    w.businessUnitCode = "BU-NOSTOCK";
+    w.location = "AMSTERDAM-001";
+    w.capacity = 10;
+    w.stock = null;
+
+    assertThrows(ValidationException.class, () -> useCase.create(w));
+  }
+
+  @Test
+  public void testCreateUnknownLocationThrows() {
+    Warehouse w = new Warehouse();
+    w.businessUnitCode = "BU-UNKNOWN-LOC";
+    w.location = "MISSING-LOCATION";
+    w.capacity = 10;
+    w.stock = 0;
+
+    assertThrows(NotFoundException.class, () -> useCase.create(w));
   }
 }

@@ -1,5 +1,9 @@
 package com.fulfilment.application.monolith.warehouses.adapters.database;
 
+import com.fulfilment.application.monolith.common.AppConstants;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
+
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
@@ -13,6 +17,17 @@ import org.jboss.logging.Logger;
 public class WarehouseRepository implements WarehouseStore, PanacheRepository<DbWarehouse> {
 
   private static final Logger LOGGER = Logger.getLogger(WarehouseRepository.class);
+  private static final String FIELD_BUSINESS_UNIT_CODE = "businessUnitCode";
+  private static final String LOG_CREATE_NULL = "create called with null warehouse";
+  private static final String LOG_CREATE_SUCCESS = "Created warehouse db record for bu=%s";
+  private static final String LOG_UPDATE_NULL = "update called with null warehouse";
+  private static final String LOG_UPDATE_NOT_FOUND = "Warehouse not found for update, bu=%s";
+  private static final String LOG_UPDATE_SUCCESS = "Updated warehouse db record for bu=%s";
+  private static final String LOG_REMOVE_NULL = "remove called with null warehouse";
+  private static final String LOG_REMOVE_SUCCESS = "Deleted warehouse db record for bu=%s";
+  private static final String LOG_REMOVE_NOTHING = "remove: nothing to delete for bu=%s";
+  private static final String LOG_FIND_NULL = "findByBusinessUnitCode called with null buCode";
+  private static final String LOG_FIND_NOTHING = "No warehouse found for bu=%s";
 
   @Override
   public List<Warehouse> getAll() {
@@ -22,7 +37,7 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
   @Override
   public void create(Warehouse warehouse) {
     if (warehouse == null) {
-      LOGGER.warn("create called with null warehouse");
+      LOGGER.warn(LOG_CREATE_NULL);
       return;
     }
 
@@ -35,21 +50,21 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
     db.archivedAt = warehouse.archivedAt;
 
     persist(db);
-    LOGGER.debugf("Created warehouse db record for bu=%s", warehouse.businessUnitCode);
+    LOGGER.debugf(LOG_CREATE_SUCCESS, warehouse.businessUnitCode);
   }
 
   @Override
   public void update(Warehouse warehouse) {
     if (warehouse == null) {
-      LOGGER.warn("update called with null warehouse");
-      throw new IllegalArgumentException("Warehouse must not be null");
+      LOGGER.warn(LOG_UPDATE_NULL);
+      throw new ValidationException(AppConstants.ERR_WAREHOUSE_NULL);
     }
 
-    DbWarehouse existing = find("businessUnitCode", warehouse.businessUnitCode).firstResult();
+    DbWarehouse existing = find(FIELD_BUSINESS_UNIT_CODE, warehouse.businessUnitCode).firstResult();
 
     if (existing == null) {
-      LOGGER.warnf("Warehouse not found for update, bu=%s", warehouse.businessUnitCode);
-      throw new IllegalArgumentException("Warehouse not found with business unit: " + warehouse.businessUnitCode);
+      LOGGER.warnf(LOG_UPDATE_NOT_FOUND, warehouse.businessUnitCode);
+      throw new NotFoundException(String.format(AppConstants.ERR_WAREHOUSE_NOT_FOUND, warehouse.businessUnitCode));
     }
 
     existing.location = warehouse.location;
@@ -58,36 +73,36 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
     existing.archivedAt = warehouse.archivedAt;
 
     persist(existing);
-    LOGGER.debugf("Updated warehouse db record for bu=%s", warehouse.businessUnitCode);
+    LOGGER.debugf(LOG_UPDATE_SUCCESS, warehouse.businessUnitCode);
   }
 
   @Override
   public void remove(Warehouse warehouse) {
     if (warehouse == null) {
-      LOGGER.warn("remove called with null warehouse");
+      LOGGER.warn(LOG_REMOVE_NULL);
       return;
     }
 
-    DbWarehouse existing = find("businessUnitCode", warehouse.businessUnitCode).firstResult();
+    DbWarehouse existing = find(FIELD_BUSINESS_UNIT_CODE, warehouse.businessUnitCode).firstResult();
 
     if (existing != null) {
       delete(existing);
-      LOGGER.debugf("Deleted warehouse db record for bu=%s", warehouse.businessUnitCode);
+      LOGGER.debugf(LOG_REMOVE_SUCCESS, warehouse.businessUnitCode);
     } else {
-      LOGGER.debugf("remove: nothing to delete for bu=%s", warehouse.businessUnitCode);
+      LOGGER.debugf(LOG_REMOVE_NOTHING, warehouse.businessUnitCode);
     }
   }
 
   @Override
   public Warehouse findByBusinessUnitCode(String buCode) {
     if (buCode == null) {
-      LOGGER.debug("findByBusinessUnitCode called with null buCode");
+      LOGGER.debug(LOG_FIND_NULL);
       return null;
     }
 
-    DbWarehouse existing = find("businessUnitCode", buCode).firstResult();
+    DbWarehouse existing = find(FIELD_BUSINESS_UNIT_CODE, buCode).firstResult();
     if (existing == null) {
-      LOGGER.debugf("No warehouse found for bu=%s", buCode);
+      LOGGER.debugf(LOG_FIND_NOTHING, buCode);
       return null;
     }
     return existing.toWarehouse();

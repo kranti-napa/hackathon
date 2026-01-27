@@ -2,6 +2,7 @@ package com.fulfilment.application.monolith.fulfilment.domain.usecases;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fulfilment.application.monolith.common.exceptions.ConflictException;
 import com.fulfilment.application.monolith.fulfilment.adapters.inmemory.InMemoryFulfilmentAssignmentStore;
 import com.fulfilment.application.monolith.fulfilment.domain.FulfilmentAssignment;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +30,7 @@ public class AssignWarehouseToStoreProductUseCaseTest {
     store.create(new FulfilmentAssignment("S1","P1","W1"));
     store.create(new FulfilmentAssignment("S1","P1","W2"));
 
-    assertThrows(IllegalStateException.class, () -> useCase.assign("S1","P1","W3"));
+    assertThrows(ConflictException.class, () -> useCase.assign("S1","P1","W3"));
   }
 
   @Test
@@ -38,7 +39,7 @@ public class AssignWarehouseToStoreProductUseCaseTest {
     store.create(new FulfilmentAssignment("S2","P2","W2"));
     store.create(new FulfilmentAssignment("S2","P3","W3"));
 
-    assertThrows(IllegalStateException.class, () -> useCase.assign("S2","P4","W4"));
+    assertThrows(ConflictException.class, () -> useCase.assign("S2","P4","W4"));
   }
 
   @Test
@@ -49,6 +50,6 @@ public class AssignWarehouseToStoreProductUseCaseTest {
     store.create(new FulfilmentAssignment("S3","P4","WX"));
     store.create(new FulfilmentAssignment("S3","P5","WX"));
 
-    assertThrows(IllegalStateException.class, () -> useCase.assign("S4","P6","WX"));
+    assertThrows(ConflictException.class, () -> useCase.assign("S4","P6","WX"));
   }
 }

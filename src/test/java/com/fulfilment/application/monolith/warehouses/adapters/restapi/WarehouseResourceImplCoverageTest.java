@@ -1,6 +1,7 @@
 package com.fulfilment.application.monolith.warehouses.adapters.restapi;
 
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
 import com.warehouse.api.beans.Warehouse;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -47,7 +48,7 @@ public class WarehouseResourceImplCoverageTest {
 
   @Test
   public void testGetAWarehouseUnitByID_notFound_throws() {
-    assertThrows(IllegalArgumentException.class, () -> resource.getAWarehouseUnitByID("NO-SUCH-BU"));
+    assertThrows(NotFoundException.class, () -> resource.getAWarehouseUnitByID("NO-SUCH-BU"));
   }
 
   @Test
@@ -71,6 +72,6 @@ public class WarehouseResourceImplCoverageTest {
   public void testReplace_nonExisting_throws() {
     Warehouse replacement = new Warehouse();
     replacement.setLocation("x");
-    assertThrows(IllegalArgumentException.class, () -> resource.replaceTheCurrentActiveWarehouse("NO-BU", replacement));
+    assertThrows(NotFoundException.class, () -> resource.replaceTheCurrentActiveWarehouse("NO-BU", replacement));
   }
 }

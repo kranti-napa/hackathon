@@ -2,14 +2,17 @@ package com.fulfilment.application.monolith.stores;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fulfilment.application.monolith.common.AppConstants;
+import com.fulfilment.application.monolith.common.exceptions.ConflictException;
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.transaction.TransactionSynchronizationRegistry;
-import jakarta.persistence.EntityManager;
-import jakarta.transaction.Synchronization;
-import jakarta.ws.rs.PathParam;
-import jakarta.transaction.Status;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -18,236 +21,245 @@ import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import java.util.List;
 import org.jboss.logging.Logger;
 
-@Path("store")
+import java.util.List;
+
+@Path(StoreResource.PATH_STORE)
 @ApplicationScoped
-@Produces("application/json")
-@Consumes("application/json")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class StoreResource {
 
-  @Inject LegacyStoreManagerGateway legacyStoreManagerGateway;
+    static final String PATH_STORE = "store";
+    private static final String PATH_ID = "{id}";
+    private static final String PARAM_ID = "id";
+    private static final String SORT_NAME = "name";
+    private static final String LOG_GET_SINGLE = "getSingle called with id=%s";
+    private static final String LOG_CREATE = "create called";
+    private static final String LOG_UPDATE = "update called for id=%s";
+    private static final String LOG_PATCH = "patch called for id=%s";
+    private static final String LOG_DELETE = "delete called for id=%s";
+    private static final String JSON_EXCEPTION_TYPE = "exceptionType";
+    private static final String JSON_CODE = "code";
+    private static final String JSON_ERROR = "error";
 
-  @Inject
-  TransactionSynchronizationRegistry txRegistry;
+    private static final Logger LOGGER = Logger.getLogger(StoreResource.class);
 
-  @Inject
-  EntityManager entityManager;
-  
-  private static final Logger LOGGER = Logger.getLogger(StoreResource.class.getName());
+    @Inject
+    LegacyStoreManagerGateway legacyStoreManagerGateway;
 
-  @GET
-  public List<Store> get() {
-    return Store.listAll(Sort.by("name"));
-  }
+    @Inject
+    TransactionSynchronizationRegistry txRegistry;
 
-  @GET
-  @Path("{id}")
-  public Store getSingle(@PathParam("id") Long id) {
-    LOGGER.debugf("getSingle called with id=%s", id);
-  // Use explicit EntityManager lookup to avoid any Panache/session caching artifacts
-    // Use a native count query to reliably detect presence in the DB (avoids
-    // unexpected cached/managed instance returns during tests).
-    try {
-      Object cnt = entityManager.createNativeQuery("select count(*) from store where id = ?").setParameter(1, id).getSingleResult();
-      long count = ((Number) cnt).longValue();
-      if (count == 0) {
-        throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
-      }
-    } catch (WebApplicationException e) {
-      throw e;
-    } catch (Exception e) {
-      LOGGER.debug("native count check failed, falling back to EntityManager.find", e);
+    @Inject
+    EntityManager entityManager;
+
+    // ---------- GET ALL ----------
+    @GET
+    public List<Store> get() {
+        return Store.listAll(Sort.by(SORT_NAME));
     }
 
-    Store entity = entityManager.find(Store.class, id);
-    if (entity == null) {
-      throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
-    }
-    return entity;
-  }
+    // ---------- GET BY ID ----------
+    @GET
+    @Path(PATH_ID)
+    public Store getSingle(@PathParam(PARAM_ID) Long id) {
+        LOGGER.debugf(LOG_GET_SINGLE, id);
 
-  @POST
-  @Transactional
-  public Response create(Store store) {
-    LOGGER.debugf("create called for store=%s", store == null ? "<null>" : store.name);
-    if (store.id != null) {
-  throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity("Id was invalidly set on request.").build());
-    }
-
-    store.persist();
-
-    // Schedule legacy side-effect after the transaction commits
-    txRegistry.registerInterposedSynchronization(new Synchronization() {
-
-      @Override
-      public void beforeCompletion() {
-        // no-op
-      }
-
-      @Override
-      public void afterCompletion(int status) {
-        if (status == Status.STATUS_COMMITTED) {
-          legacyStoreManagerGateway.createStoreOnLegacySystem(store);
+        if (id == null) {
+            throw new ValidationException(AppConstants.ERR_STORE_ID_REQUIRED);
         }
-      }
-    });
 
-    return Response.status(Response.Status.CREATED).entity(store).build();
-  }
-
-  @PUT
-  @Path("{id}")
-  @Transactional
-  public Store update(@PathParam("id") Long id, Store updatedStore) {
-    LOGGER.debugf("update called for id=%s newName=%s", id, updatedStore == null ? "<null>" : updatedStore.name);
-    if (updatedStore == null || updatedStore.name == null) {
-      throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity("Store Name was not set on request.").build());
-    }
-
-    Store entity = Store.findById(id);
-
-    if (entity == null) {
-      throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
-    }
-
-    entity.name = updatedStore.name;
-    entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
-
-    txRegistry.registerInterposedSynchronization(new Synchronization() {
-      @Override
-      public void beforeCompletion() {}
-
-      @Override
-      public void afterCompletion(int status) {
-        if (status == Status.STATUS_COMMITTED) {
-          legacyStoreManagerGateway.updateStoreOnLegacySystem(entity);
+        Store entity = entityManager.find(Store.class, id);
+        if (entity == null) {
+            throw new NotFoundException(
+                    String.format(AppConstants.ERR_STORE_NOT_FOUND, id)
+            );
         }
-      }
-    });
-
-    return entity;
-  }
-
-  @PATCH
-  @Path("{id}")
-  @Transactional
-  public Store patch(@PathParam("id") Long id, Store updatedStore) {
-    LOGGER.debugf("patch called for id=%s", id);
-    if (updatedStore == null) {
-      throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity("Request body was empty.").build());
+        return entity;
     }
 
-    Store entity = Store.findById(id);
+    // ---------- CREATE ----------
+    @POST
+    @Transactional
+    public Response create(Store store) {
+        LOGGER.debug(LOG_CREATE);
 
-    if (entity == null) {
-      throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
-    }
-
-    // apply partial updates only when the incoming values are provided
-    if (updatedStore.name != null) {
-      entity.name = updatedStore.name;
-    }
-
-    // update quantity only when caller provided a non-zero value
-    if (updatedStore.quantityProductsInStock != 0) {
-      entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
-    }
-
-    txRegistry.registerInterposedSynchronization(new Synchronization() {
-      @Override
-      public void beforeCompletion() {}
-
-      @Override
-      public void afterCompletion(int status) {
-        if (status == Status.STATUS_COMMITTED) {
-          legacyStoreManagerGateway.updateStoreOnLegacySystem(entity);
+        if (store == null) {
+            throw new ValidationException(AppConstants.ERR_STORE_NULL);
         }
-      }
-    });
 
-    return entity;
-  }
+        if (store.id != null) {
+            throw new ConflictException(AppConstants.ERR_STORE_ID_NOT_ALLOWED);
+        }
 
-  @DELETE
-  @Path("{id}")
-  @Transactional
-  public Response delete(@PathParam("id") Long id) {
-    LOGGER.debugf("delete called for id=%s", id);
-    Store entity = Store.findById(id);
-    if (entity == null) {
-      throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity("Store with id of " + id + " does not exist.").build());
-    }
-    try {
-      Object beforeCount = entityManager.createQuery("select count(s) from Store s where s.id = :id").setParameter("id", id).getSingleResult();
-      LOGGER.debugf("store count before delete for id=%s -> %s", id, beforeCount);
-    } catch (Exception e) {
-      LOGGER.debugf("count before delete failed: %s", e.getMessage());
-    }
+        store.persist();
 
-    entity.delete();
+        txRegistry.registerInterposedSynchronization(new Synchronization() {
+            @Override
+            public void beforeCompletion() {}
 
-    try {
-      Object afterDeleteCount = entityManager.createQuery("select count(s) from Store s where s.id = :id").setParameter("id", id).getSingleResult();
-      LOGGER.debugf("store count immediately after entity.delete() for id=%s -> %s", id, afterDeleteCount);
-    } catch (Exception e) {
-      LOGGER.debugf("count after entity.delete failed: %s", e.getMessage());
-    }
-    // flush and clear persistence context to ensure subsequent non-transactional lookups
-    // do not return a stale managed instance. If the entity still appears, attempt
-    // a defensive delete-by-id to ensure it is removed for test determinism.
-    try {
-      entityManager.flush();
-      entityManager.clear();
-    } catch (Exception e) {
-      LOGGER.debug("flush/clear after delete failed", e);
+            @Override
+            public void afterCompletion(int status) {
+                if (status == Status.STATUS_COMMITTED) {
+                    legacyStoreManagerGateway.createStoreOnLegacySystem(store);
+                }
+            }
+        });
+
+        return Response.status(Response.Status.CREATED).entity(store).build();
     }
 
-    try {
-      Store maybe = Store.findById(id);
-      if (maybe != null) {
-        LOGGER.warnf("Entity still present after delete/flush, attempting deleteById id=%s", id);
-        Store.deleteById(id);
-        try {
-          entityManager.flush();
-          entityManager.clear();
-        } catch (Exception ignore) {}
-      }
-    } catch (Exception ex) {
-      LOGGER.debug("Post-delete verification failed", ex);
+    // ---------- UPDATE ----------
+    @PUT
+    @Path(PATH_ID)
+    @Transactional
+    public Store update(@PathParam(PARAM_ID) Long id, Store updatedStore) {
+        LOGGER.debugf(LOG_UPDATE, id);
+
+        if (id == null) {
+            throw new ValidationException(AppConstants.ERR_STORE_ID_REQUIRED);
+        }
+
+        if (updatedStore == null || updatedStore.name == null) {
+            throw new ValidationException(AppConstants.ERR_STORE_NULL);
+        }
+
+        if (updatedStore.id != null && !updatedStore.id.equals(id)) {
+            throw new ValidationException(AppConstants.ERR_STORE_ID_MISMATCH);
+        }
+
+        Store entity = Store.findById(id);
+        if (entity == null) {
+            throw new NotFoundException(
+                    String.format(AppConstants.ERR_STORE_NOT_FOUND, id)
+            );
+        }
+
+        entity.name = updatedStore.name;
+        entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
+
+        txRegistry.registerInterposedSynchronization(new Synchronization() {
+            @Override
+            public void beforeCompletion() {}
+
+            @Override
+            public void afterCompletion(int status) {
+                if (status == Status.STATUS_COMMITTED) {
+                    legacyStoreManagerGateway.updateStoreOnLegacySystem(entity);
+                }
+            }
+        });
+
+        return entity;
     }
-    return Response.status(Response.Status.NO_CONTENT).build();
-  }
 
-  @Provider
-  public static class ErrorMapper implements ExceptionMapper<Exception> {
+    // ---------- PATCH ----------
+    @PATCH
+    @Path(PATH_ID)
+    @Transactional
+    public Store patch(@PathParam(PARAM_ID) Long id, Store updatedStore) {
+        LOGGER.debugf(LOG_PATCH, id);
 
-    @Inject ObjectMapper objectMapper;
+        if (id == null) {
+            throw new ValidationException(AppConstants.ERR_STORE_ID_REQUIRED);
+        }
 
-    @Override
-    public Response toResponse(Exception exception) {
-      LOGGER.error("Failed to handle request", exception);
+        if (updatedStore == null) {
+            throw new ValidationException(AppConstants.ERR_STORE_NULL);
+        }
 
-      int code = 500;
-      if (exception instanceof WebApplicationException) {
-        code = ((WebApplicationException) exception).getResponse().getStatus();
-      }
+        if (updatedStore.id != null && !updatedStore.id.equals(id)) {
+            throw new ValidationException(AppConstants.ERR_STORE_ID_MISMATCH);
+        }
 
-      ObjectNode exceptionJson = objectMapper.createObjectNode();
-      exceptionJson.put("exceptionType", exception.getClass().getName());
-      exceptionJson.put("code", code);
+        Store entity = Store.findById(id);
+        if (entity == null) {
+            throw new NotFoundException(
+                    String.format(AppConstants.ERR_STORE_NOT_FOUND, id)
+            );
+        }
 
-      if (exception.getMessage() != null) {
-        exceptionJson.put("error", exception.getMessage());
-      }
+        if (updatedStore.name != null) {
+            entity.name = updatedStore.name;
+        }
 
-      return Response.status(code).entity(exceptionJson).build();
+        if (updatedStore.quantityProductsInStock != 0) {
+            entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
+        }
+
+        txRegistry.registerInterposedSynchronization(new Synchronization() {
+            @Override
+            public void beforeCompletion() {}
+
+            @Override
+            public void afterCompletion(int status) {
+                if (status == Status.STATUS_COMMITTED) {
+                    legacyStoreManagerGateway.updateStoreOnLegacySystem(entity);
+                }
+            }
+        });
+
+        return entity;
     }
-  }
+
+    // ---------- DELETE ----------
+    @DELETE
+    @Path(PATH_ID)
+    @Transactional
+    public Response delete(@PathParam(PARAM_ID) Long id) {
+        LOGGER.debugf(LOG_DELETE, id);
+
+        if (id == null) {
+            throw new ValidationException(AppConstants.ERR_STORE_ID_REQUIRED);
+        }
+
+        Store entity = Store.findById(id);
+        if (entity == null) {
+            throw new NotFoundException(
+                    String.format(AppConstants.ERR_STORE_NOT_FOUND, id)
+            );
+        }
+
+        entity.delete();
+        entityManager.flush();
+        entityManager.clear();
+
+        return Response.noContent().build();
+    }
+
+    // ---------- ERROR MAPPER (kept for backward compatibility in tests) ----------
+    @Provider
+    public static class ErrorMapper implements ExceptionMapper<Exception> {
+
+        @Inject
+        ObjectMapper objectMapper;
+
+        @Override
+        public Response toResponse(Exception exception) {
+
+            int code = 500;
+            if (exception instanceof ValidationException) {
+                code = 400;
+            } else if (exception instanceof ConflictException) {
+                code = 409;
+            } else if (exception instanceof NotFoundException) {
+                code = 404;
+            }
+
+            ObjectNode json = objectMapper.createObjectNode();
+            json.put(JSON_EXCEPTION_TYPE, exception.getClass().getName());
+            json.put(JSON_CODE, code);
+            json.put(JSON_ERROR, exception.getMessage());
+
+            return Response.status(code).entity(json).build();
+        }
+    }
 }

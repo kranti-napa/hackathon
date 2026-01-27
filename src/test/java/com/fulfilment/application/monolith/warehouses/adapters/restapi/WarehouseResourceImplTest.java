@@ -1,21 +1,32 @@
 package com.fulfilment.application.monolith.warehouses.adapters.restapi;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
+import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import com.fulfilment.application.monolith.warehouses.domain.usecases.testhelpers.InMemoryWarehouseStore;
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import java.lang.reflect.Field;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+@QuarkusTest
+@Transactional
 public class WarehouseResourceImplTest {
 
+  @Inject
   WarehouseResourceImpl resource;
-  InMemoryWarehouseStore store;
 
-  static class TestWarehouseRepository extends com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository {
+  @Inject
+  WarehouseRepository warehouseRepository;
+
+  static class TestWarehouseRepository extends WarehouseRepository {
     private final WarehouseStore delegate = new InMemoryWarehouseStore();
 
     @Override
@@ -34,19 +45,66 @@ public class WarehouseResourceImplTest {
     }
   }
 
+  WarehouseResourceImpl unitResource;
+
   @BeforeEach
-  public void setup() throws Exception {
-    resource = new WarehouseResourceImpl();
-    // inject test repo via reflection (field has package access)
+  public void setupUnit() throws Exception {
+    unitResource = new WarehouseResourceImpl();
     TestWarehouseRepository repo = new TestWarehouseRepository();
     Field f = WarehouseResourceImpl.class.getDeclaredField("warehouseRepository");
     f.setAccessible(true);
-    f.set(resource, repo);
+    f.set(unitResource, repo);
+  }
+
+  // ---------- ENDPOINT TESTS ----------
+
+  @Test
+  public void testSimpleListWarehouses() {
+    final String path = "warehouse";
+
+    given()
+        .when()
+        .get(path)
+        .then()
+        .statusCode(200)
+        .body(containsString("MWH.001"), containsString("MWH.012"), containsString("MWH.023"));
   }
 
   @Test
+  public void testSimpleCheckingArchivingWarehouses() {
+    final String path = "warehouse";
+
+    given()
+        .when()
+        .get(path)
+        .then()
+        .statusCode(200)
+        .body(
+            containsString("MWH.001"),
+            containsString("MWH.012"),
+            containsString("MWH.023"),
+            containsString("ZWOLLE-001"),
+            containsString("AMSTERDAM-001"),
+            containsString("TILBURG-001"));
+
+    given().when().delete(path + "/MWH.001").then().statusCode(204);
+
+    given()
+        .when()
+        .get(path)
+        .then()
+        .statusCode(200)
+        .body(
+        containsString("ZWOLLE-001"),
+        containsString("AMSTERDAM-001"),
+        containsString("TILBURG-001"));
+  }
+
+  // ---------- RESOURCE TESTS ----------
+
+  @Test
   public void testListAndCreateAndGet() {
-    List<com.warehouse.api.beans.Warehouse> list = resource.listAllWarehousesUnits();
+    List<com.warehouse.api.beans.Warehouse> list = unitResource.listAllWarehousesUnits();
     assertNotNull(list);
 
     com.warehouse.api.beans.Warehouse api = new com.warehouse.api.beans.Warehouse();
@@ -55,9 +113,9 @@ public class WarehouseResourceImplTest {
     api.setCapacity(10);
     api.setStock(0);
 
-    resource.createANewWarehouseUnit(api);
+    unitResource.createANewWarehouseUnit(api);
 
-    com.warehouse.api.beans.Warehouse fetched = resource.getAWarehouseUnitByID("B-1");
+    com.warehouse.api.beans.Warehouse fetched = unitResource.getAWarehouseUnitByID("B-1");
     assertEquals("B-1", fetched.getBusinessUnitCode());
   }
 
@@ -69,12 +127,47 @@ public class WarehouseResourceImplTest {
     api.setCapacity(5);
     api.setStock(0);
 
+    unitResource.createANewWarehouseUnit(api);
+
+    unitResource.archiveAWarehouseUnitByID("B-ARCH");
+
+    List<com.warehouse.api.beans.Warehouse> list = unitResource.listAllWarehousesUnits();
+    assertNotNull(list);
+  }
+
+  @Test
+  public void testReplace_happyPath_updatesExisting() {
+    com.warehouse.api.beans.Warehouse api = new com.warehouse.api.beans.Warehouse();
+    api.setBusinessUnitCode("BR-10");
+    api.setLocation("L-OLD");
+    api.setCapacity(10);
+    api.setStock(1);
+
     resource.createANewWarehouseUnit(api);
 
-    resource.archiveAWarehouseUnitByID("B-ARCH");
+    com.warehouse.api.beans.Warehouse replacement = new com.warehouse.api.beans.Warehouse();
+    replacement.setLocation("L-NEW");
+    replacement.setCapacity(20);
+    replacement.setStock(2);
 
-    // now listing should not throw and archived warehouse should have archivedAt set in the domain
-    List<com.warehouse.api.beans.Warehouse> list = resource.listAllWarehousesUnits();
-    assertNotNull(list);
+    com.warehouse.api.beans.Warehouse out = resource.replaceTheCurrentActiveWarehouse("BR-10", replacement);
+    assertNotNull(out);
+
+    var found = warehouseRepository.findByBusinessUnitCode("BR-10");
+    assertNotNull(found);
+    assertEquals("L-NEW", found.location);
+    assertEquals(2, found.stock.intValue());
+  }
+
+  @Test
+  public void testGetAWarehouseUnitByID_notFound_throws() {
+    assertThrows(NotFoundException.class, () -> resource.getAWarehouseUnitByID("NO-SUCH-BU"));
+  }
+
+  @Test
+  public void testReplace_nonExisting_throws() {
+    com.warehouse.api.beans.Warehouse replacement = new com.warehouse.api.beans.Warehouse();
+    replacement.setLocation("x");
+    assertThrows(NotFoundException.class, () -> resource.replaceTheCurrentActiveWarehouse("NO-BU", replacement));
   }
 }

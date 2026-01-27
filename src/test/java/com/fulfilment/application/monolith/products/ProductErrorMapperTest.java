@@ -2,7 +2,7 @@ package com.fulfilment.application.monolith.products;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import jakarta.ws.rs.WebApplicationException;
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -17,8 +17,8 @@ public class ProductErrorMapperTest {
     f.setAccessible(true);
     f.set(mapper, om);
 
-    WebApplicationException webEx = new WebApplicationException("not found", 404);
-    Response r = mapper.toResponse(webEx);
+    NotFoundException notFound = new NotFoundException("not found");
+    Response r = mapper.toResponse(notFound);
     Assertions.assertEquals(404, r.getStatus());
 
     Object entity = r.getEntity();

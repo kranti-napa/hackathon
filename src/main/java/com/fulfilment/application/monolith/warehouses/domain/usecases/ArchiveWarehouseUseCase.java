@@ -1,5 +1,8 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
+import com.fulfilment.application.monolith.common.AppConstants;
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
@@ -20,15 +23,15 @@ public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
   public void archive(Warehouse warehouse) {
 
       if (warehouse == null || warehouse.businessUnitCode == null) {
-          throw new IllegalArgumentException("Invalid warehouse for archiving");
+          throw new ValidationException(AppConstants.ERR_WAREHOUSE_INVALID_ARCHIVE);
       }
 
       Warehouse existing =
           warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode);
 
       if (existing == null) {
-          throw new IllegalArgumentException(
-              "Warehouse not found for business unit: " + warehouse.businessUnitCode
+          throw new NotFoundException(
+              String.format(AppConstants.ERR_WAREHOUSE_NOT_FOUND, warehouse.businessUnitCode)
           );
       }
 
