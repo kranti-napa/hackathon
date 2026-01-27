@@ -12,6 +12,7 @@ import com.fulfilment.application.monolith.common.exceptions.ConflictException;
 import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
 import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.http.ContentType;
 import jakarta.ws.rs.core.Response;
 import java.math.BigDecimal;
 import java.util.List;
@@ -54,21 +55,37 @@ public class ProductResourceTest {
   public void testCrudProductEndpoint() {
     final String path = "product";
 
-    given()
-        .when()
-        .get(path)
-        .then()
-        .statusCode(200)
-        .body(containsString("TONSTAD"), containsString("KALLAX"), containsString("BESTÅ"));
+    String name = "P-" + System.currentTimeMillis();
+    Product p = new Product(name);
+    p.stock = 1;
 
-    given().when().delete(path + "/1").then().statusCode(204);
+    Long id =
+      given()
+        .contentType(ContentType.JSON)
+        .body(p)
+      .when()
+        .post(path)
+      .then()
+        .statusCode(201)
+        .extract()
+        .jsonPath()
+        .getLong("id");
 
     given()
-        .when()
-        .get(path)
-        .then()
-        .statusCode(200)
-        .body(not(containsString("TONSTAD")), containsString("KALLAX"), containsString("BESTÅ"));
+      .when()
+      .get(path)
+      .then()
+      .statusCode(200)
+      .body(containsString(name));
+
+    given().when().delete(path + "/" + id).then().statusCode(204);
+
+    given()
+      .when()
+      .get(path)
+      .then()
+      .statusCode(200)
+      .body(not(containsString(name)));
   }
 
   // ---------- RESOURCE TESTS ----------

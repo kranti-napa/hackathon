@@ -1,6 +1,6 @@
 name: Java CI (Quarkus)
-
-# Trigger the workflow on push or pull request to the default branches
+# Trigger the workflow on push or pull request to the primary branch used in this
+# repository. This project historically pushes to `master` so include it here.
 on:
   push:
     branches: [ master, main ]
@@ -20,20 +20,19 @@ jobs:
         # which causes `./mvnw` to fail with exit code 126 on Linux runners. Ensure it's executable.
         run: chmod +x mvnw
 
-      - name: Set up Java
+      - name: Set up Java 17 (Temurin)
         uses: actions/setup-java@v3
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
           cache: maven
 
-      - name: Run Maven unit tests (uses wrapper)
-        run: ./mvnw -B -DskipTests=false test
-        env:
-          MAVEN_OPTS: -Xmx2g
+      - name: Run Maven tests (wrapper)
+        # Use the project's Maven wrapper for deterministic CI Maven version
+        run: ./mvnw -B -DskipTests=false -DtrimStackTrace=false test
 
-      - name: Package (skip tests)
-        run: ./mvnw -B -DskipTests package
+      - name: Generate report (JaCoCo)
+        run: ./mvnw -B jacoco:report || true
 
       - name: Upload JaCoCo report
         if: always()
