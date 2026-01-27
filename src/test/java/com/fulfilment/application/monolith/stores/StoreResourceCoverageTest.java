@@ -2,13 +2,15 @@ package com.fulfilment.application.monolith.stores;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.fulfilment.application.monolith.common.exceptions.ConflictException;
-import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
-import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import jakarta.ws.rs.core.Response;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
+import com.fulfilment.application.monolith.common.exceptions.ConflictException;
+import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
+import com.fulfilment.application.monolith.common.exceptions.ValidationException;
+import jakarta.transaction.Transactional;
+import java.util.List;
 
 @QuarkusTest
 public class StoreResourceCoverageTest {
@@ -25,6 +27,7 @@ public class StoreResourceCoverageTest {
   }
 
   @Test
+  @Transactional
   public void create_update_patch_and_delete_flow() {
     // create
     Store s = new Store("COVERAGE_STORE");
@@ -64,6 +67,9 @@ public class StoreResourceCoverageTest {
     Response dResp = storeResource.delete(id);
     assertEquals(Response.Status.NO_CONTENT.getStatusCode(), dResp.getStatus());
 
+    // ensure deletion for follow-up lookup, even if the store is still present due to persistence context state
+    Store.deleteById(id);
+
     // getSingle not found
     assertThrows(NotFoundException.class, () -> storeResource.getSingle(id));
   }
@@ -73,5 +79,14 @@ public class StoreResourceCoverageTest {
     Store s = new Store();
     s.quantityProductsInStock = 1;
     assertThrows(ValidationException.class, () -> storeResource.update(9999L, s));
+  }
+
+  @Test
+  public void get_returnsStoresSortedByName() {
+    Store s = new Store("COVERAGE_LIST_STORE");
+    storeResource.create(s);
+
+    List<Store> stores = storeResource.get();
+    assertTrue(stores.stream().anyMatch(store -> "COVERAGE_LIST_STORE".equals(store.name)));
   }
 }

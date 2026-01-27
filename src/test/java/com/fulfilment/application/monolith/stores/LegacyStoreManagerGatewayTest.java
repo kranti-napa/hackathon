@@ -36,4 +36,23 @@ public class LegacyStoreManagerGatewayTest {
     Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
     Assertions.assertDoesNotThrow(() -> g.updateStoreOnLegacySystem(s));
   }
+
+  @Test
+  public void create_and_update_whenTempDirInvalid_logsAndContinues() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("tempdir-fail");
+    s.quantityProductsInStock = 1;
+
+    String originalTmp = System.getProperty("java.io.tmpdir");
+    try {
+      System.setProperty("java.io.tmpdir", "Z:\\path-does-not-exist\\");
+
+      Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+      Assertions.assertDoesNotThrow(() -> g.updateStoreOnLegacySystem(s));
+    } finally {
+      if (originalTmp != null) {
+        System.setProperty("java.io.tmpdir", originalTmp);
+      }
+    }
+  }
 }

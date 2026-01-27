@@ -83,4 +83,35 @@ public class ReplaceWarehouseUseCaseTest {
 
     assertThrows(ValidationException.class, () -> useCase.replace(replacement));
   }
+
+  @Test
+  public void testReplaceNullWarehouseThrows() {
+    assertThrows(ValidationException.class, () -> useCase.replace(null));
+  }
+
+  @Test
+  public void testReplaceNullBusinessUnitThrows() {
+    Warehouse replacement = new Warehouse();
+    replacement.businessUnitCode = null;
+    replacement.capacity = 10;
+    replacement.stock = 1;
+
+    assertThrows(ValidationException.class, () -> useCase.replace(replacement));
+  }
+
+  @Test
+  public void testReplaceNullCapacityThrows() {
+    Warehouse existing = new Warehouse();
+    existing.businessUnitCode = "MWH.701";
+    existing.capacity = 10;
+    existing.stock = 1;
+    store.create(existing);
+
+    Warehouse replacement = new Warehouse();
+    replacement.businessUnitCode = "MWH.701";
+    replacement.capacity = null;
+    replacement.stock = 1;
+
+    assertThrows(ValidationException.class, () -> useCase.replace(replacement));
+  }
 }
