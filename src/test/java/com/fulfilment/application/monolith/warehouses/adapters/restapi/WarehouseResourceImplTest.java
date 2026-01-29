@@ -5,8 +5,12 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
+import com.fulfilment.application.monolith.location.LocationGateway;
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
+import com.fulfilment.application.monolith.warehouses.domain.usecases.ArchiveWarehouseUseCase;
+import com.fulfilment.application.monolith.warehouses.domain.usecases.CreateWarehouseUseCase;
+import com.fulfilment.application.monolith.warehouses.domain.usecases.ReplaceWarehouseUseCase;
 import com.fulfilment.application.monolith.warehouses.domain.usecases.testhelpers.InMemoryWarehouseStore;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -27,7 +31,11 @@ public class WarehouseResourceImplTest {
   WarehouseRepository warehouseRepository;
 
   static class TestWarehouseRepository extends WarehouseRepository {
-    private final WarehouseStore delegate = new InMemoryWarehouseStore();
+    private final WarehouseStore delegate;
+
+    TestWarehouseRepository(WarehouseStore delegate) {
+      this.delegate = delegate;
+    }
 
     @Override
     public java.util.List<com.fulfilment.application.monolith.warehouses.domain.models.Warehouse> getAll() {
@@ -50,10 +58,27 @@ public class WarehouseResourceImplTest {
   @BeforeEach
   public void setupUnit() throws Exception {
     unitResource = new WarehouseResourceImpl();
-    TestWarehouseRepository repo = new TestWarehouseRepository();
+    WarehouseStore store = new InMemoryWarehouseStore();
+    TestWarehouseRepository repo = new TestWarehouseRepository(store);
+    CreateWarehouseUseCase createUseCase = new CreateWarehouseUseCase(store, new LocationGateway());
+    ReplaceWarehouseUseCase replaceUseCase = new ReplaceWarehouseUseCase(store);
+    ArchiveWarehouseUseCase archiveUseCase = new ArchiveWarehouseUseCase(store);
+
     Field f = WarehouseResourceImpl.class.getDeclaredField("warehouseRepository");
     f.setAccessible(true);
     f.set(unitResource, repo);
+
+    Field createField = WarehouseResourceImpl.class.getDeclaredField("createWarehouseUseCase");
+    createField.setAccessible(true);
+    createField.set(unitResource, createUseCase);
+
+    Field replaceField = WarehouseResourceImpl.class.getDeclaredField("replaceWarehouseUseCase");
+    replaceField.setAccessible(true);
+    replaceField.set(unitResource, replaceUseCase);
+
+    Field archiveField = WarehouseResourceImpl.class.getDeclaredField("archiveWarehouseUseCase");
+    archiveField.setAccessible(true);
+    archiveField.set(unitResource, archiveUseCase);
   }
 
   // ---------- ENDPOINT TESTS ----------
