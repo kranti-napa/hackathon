@@ -52,4 +52,25 @@ public class AssignWarehouseToStoreProductUseCaseTest {
 
     assertThrows(ConflictException.class, () -> useCase.assign("S4","P6","WX"));
   }
+
+  @Test
+  public void testStoreMaxThreeWarehouses_allowsExistingWarehouse() {
+    store.create(new FulfilmentAssignment("S2","P1","W1"));
+    store.create(new FulfilmentAssignment("S2","P2","W2"));
+    store.create(new FulfilmentAssignment("S2","P3","W3"));
+
+    useCase.assign("S2", "P4", "W1");
+
+    assertEquals(4, store.getAll().size());
+  }
+
+  @Test
+  public void testProductMaxTwoWarehouses_allowsExistingWarehouse() {
+    store.create(new FulfilmentAssignment("S1","P1","W1"));
+    store.create(new FulfilmentAssignment("S1","P1","W2"));
+
+    useCase.assign("S1", "P1", "W2");
+
+    assertEquals(2, store.getAll().size());
+  }
 }

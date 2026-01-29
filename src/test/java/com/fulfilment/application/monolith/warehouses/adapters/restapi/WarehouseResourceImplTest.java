@@ -51,6 +51,12 @@ public class WarehouseResourceImplTest {
     public void update(com.fulfilment.application.monolith.warehouses.domain.models.Warehouse warehouse) {
       delegate.update(warehouse);
     }
+
+    @Override
+    public com.fulfilment.application.monolith.warehouses.domain.models.Warehouse findByBusinessUnitCode(
+        String buCode) {
+      return delegate.findByBusinessUnitCode(buCode);
+    }
   }
 
   WarehouseResourceImpl unitResource;
@@ -163,25 +169,25 @@ public class WarehouseResourceImplTest {
   @Test
   public void testReplace_happyPath_updatesExisting() {
     com.warehouse.api.beans.Warehouse api = new com.warehouse.api.beans.Warehouse();
-    api.setBusinessUnitCode("BR-10");
-    api.setLocation("L-OLD");
+    api.setBusinessUnitCode("BR-10-UT");
+    api.setLocation("AMSTERDAM-001");
     api.setCapacity(10);
     api.setStock(1);
 
     resource.createANewWarehouseUnit(api);
 
     com.warehouse.api.beans.Warehouse replacement = new com.warehouse.api.beans.Warehouse();
-    replacement.setLocation("L-NEW");
+    replacement.setLocation("AMSTERDAM-002");
     replacement.setCapacity(20);
-    replacement.setStock(2);
+    replacement.setStock(1);
 
-    com.warehouse.api.beans.Warehouse out = resource.replaceTheCurrentActiveWarehouse("BR-10", replacement);
+    com.warehouse.api.beans.Warehouse out = resource.replaceTheCurrentActiveWarehouse("BR-10-UT", replacement);
     assertNotNull(out);
 
-    var found = warehouseRepository.findByBusinessUnitCode("BR-10");
+    var found = warehouseRepository.findByBusinessUnitCode("BR-10-UT");
     assertNotNull(found);
-    assertEquals("L-NEW", found.location);
-    assertEquals(2, found.stock.intValue());
+    assertEquals("AMSTERDAM-002", found.location);
+    assertEquals(1, found.stock.intValue());
   }
 
   @Test

@@ -24,15 +24,33 @@ public class AssignWarehouseToStoreProductUseCase {
 
         List<FulfilmentAssignment> all = assignmentStore.getAll();
 
+        boolean alreadyAssigned =
+            all.stream().anyMatch(a ->
+                a.storeId.equals(storeId)
+                    && a.productId.equals(productId)
+                    && a.warehouseBusinessUnitCode.equals(warehouseBusinessUnitCode));
+
+        if (alreadyAssigned) {
+            return;
+        }
+
         // Constraint 1:
         // Each Product → max 2 Warehouses per Store
         long warehousesForProductInStore =
             all.stream()
                .filter(a -> a.storeId.equals(storeId))
                .filter(a -> a.productId.equals(productId))
+               .map(a -> a.warehouseBusinessUnitCode)
+               .distinct()
                .count();
 
-        if (warehousesForProductInStore >= 2) {
+        boolean warehouseAlreadyForProductInStore =
+            all.stream().anyMatch(a ->
+                a.storeId.equals(storeId)
+                    && a.productId.equals(productId)
+                    && a.warehouseBusinessUnitCode.equals(warehouseBusinessUnitCode));
+
+        if (!warehouseAlreadyForProductInStore && warehousesForProductInStore >= 2) {
             throw new ConflictException(
                 AppConstants.ERR_ASSIGN_MAX_WAREHOUSES_PER_PRODUCT);
         }
@@ -46,7 +64,12 @@ public class AssignWarehouseToStoreProductUseCase {
                .distinct()
                .count();
 
-        if (warehousesForStore >= 3) {
+        boolean warehouseAlreadyForStore =
+            all.stream().anyMatch(a ->
+                a.storeId.equals(storeId)
+                    && a.warehouseBusinessUnitCode.equals(warehouseBusinessUnitCode));
+
+        if (!warehouseAlreadyForStore && warehousesForStore >= 3) {
             throw new ConflictException(
                 AppConstants.ERR_ASSIGN_MAX_WAREHOUSES_PER_STORE);
         }
@@ -61,7 +84,12 @@ public class AssignWarehouseToStoreProductUseCase {
                .distinct()
                .count();
 
-        if (productsInWarehouse >= 5) {
+        boolean productAlreadyInWarehouse =
+            all.stream().anyMatch(a ->
+                a.warehouseBusinessUnitCode.equals(warehouseBusinessUnitCode)
+                    && a.productId.equals(productId));
+
+        if (!productAlreadyInWarehouse && productsInWarehouse >= 5) {
             throw new ConflictException(
                 AppConstants.ERR_ASSIGN_MAX_PRODUCTS_PER_WAREHOUSE);
         }
