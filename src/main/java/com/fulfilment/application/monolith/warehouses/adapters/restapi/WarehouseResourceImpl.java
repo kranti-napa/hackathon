@@ -5,14 +5,14 @@ import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
 import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
 import com.warehouse.api.WarehouseResource;
-import com.warehouse.api.beans.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.usecases.ArchiveWarehouseUseCase;
+import com.fulfilment.application.monolith.warehouses.domain.usecases.CreateWarehouseUseCase;
+import com.fulfilment.application.monolith.warehouses.domain.usecases.ReplaceWarehouseUseCase;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 
@@ -22,6 +22,15 @@ public class WarehouseResourceImpl implements WarehouseResource {
 
     @Inject
     WarehouseRepository warehouseRepository;
+
+    @Inject
+    CreateWarehouseUseCase createWarehouseUseCase;
+
+    @Inject
+    ReplaceWarehouseUseCase replaceWarehouseUseCase;
+
+    @Inject
+    ArchiveWarehouseUseCase archiveWarehouseUseCase;
 
     private static final String LOG_GET_BY_ID = "getAWarehouseUnitByID called bu=%s";
     private static final String LOG_CREATE = "createANewWarehouseUnit created bu=%s";
@@ -55,12 +64,11 @@ public class WarehouseResourceImpl implements WarehouseResource {
             throw new ValidationException(AppConstants.ERR_WAREHOUSE_NULL);
         }
 
-        for (com.fulfilment.application.monolith.warehouses.domain.models.Warehouse d
-                : warehouseRepository.getAll()) {
+        com.fulfilment.application.monolith.warehouses.domain.models.Warehouse d =
+                warehouseRepository.findByBusinessUnitCode(businessUnitCode);
 
-            if (businessUnitCode.equals(d.businessUnitCode)) {
-                return toApi(d);
-            }
+        if (d != null) {
+            return toApi(d);
         }
 
         throw new NotFoundException(
@@ -78,10 +86,9 @@ public class WarehouseResourceImpl implements WarehouseResource {
         }
 
         com.fulfilment.application.monolith.warehouses.domain.models.Warehouse d =
-                toDomain(api);
+            toDomain(api);
 
-        d.createdAt = LocalDateTime.now();
-        warehouseRepository.create(d);
+        createWarehouseUseCase.create(d);
         LOGGER.debugf(LOG_CREATE, api.getBusinessUnitCode() == null ? LOG_NULL : api.getBusinessUnitCode());
         return api;
     }
@@ -96,10 +103,10 @@ public class WarehouseResourceImpl implements WarehouseResource {
         }
 
         com.fulfilment.application.monolith.warehouses.domain.models.Warehouse d =
-                toDomain(api);
+            toDomain(api);
 
         d.businessUnitCode = businessUnitCode;
-        warehouseRepository.update(d);
+        replaceWarehouseUseCase.replace(d);
         LOGGER.debugf(LOG_REPLACE, businessUnitCode);
         return api;
     }
@@ -113,19 +120,11 @@ public class WarehouseResourceImpl implements WarehouseResource {
             throw new ValidationException(AppConstants.ERR_WAREHOUSE_NULL);
         }
 
-        for (com.fulfilment.application.monolith.warehouses.domain.models.Warehouse d
-                : warehouseRepository.getAll()) {
+        com.fulfilment.application.monolith.warehouses.domain.models.Warehouse d =
+                new com.fulfilment.application.monolith.warehouses.domain.models.Warehouse();
+        d.businessUnitCode = businessUnitCode;
 
-            if (businessUnitCode.equals(d.businessUnitCode)) {
-                d.archivedAt = java.time.LocalDateTime.now();
-                warehouseRepository.update(d);
-                return;
-            }
-        }
-
-        throw new NotFoundException(
-            String.format(AppConstants.ERR_WAREHOUSE_NOT_FOUND, businessUnitCode)
-        );
+        archiveWarehouseUseCase.archive(d);
     }
 
     // ---------- MAPPERS ----------

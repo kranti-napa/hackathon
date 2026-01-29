@@ -23,8 +23,8 @@ public class WarehouseResourceImplCoverageTest {
   @Test
   public void testReplace_happyPath_updatesExisting() {
     Warehouse api = new Warehouse();
-    api.setBusinessUnitCode("BR-10");
-    api.setLocation("L-OLD");
+    api.setBusinessUnitCode("BR-10-COV");
+    api.setLocation("AMSTERDAM-001");
     api.setCapacity(10);
     api.setStock(1);
 
@@ -33,17 +33,17 @@ public class WarehouseResourceImplCoverageTest {
 
     // prepare replacement payload (note: replaceTheCurrentActiveWarehouse uses the path param BU)
     Warehouse replacement = new Warehouse();
-    replacement.setLocation("L-NEW");
+    replacement.setLocation("AMSTERDAM-002");
     replacement.setCapacity(20);
-    replacement.setStock(2);
+    replacement.setStock(1);
 
-    Warehouse out = resource.replaceTheCurrentActiveWarehouse("BR-10", replacement);
+    Warehouse out = resource.replaceTheCurrentActiveWarehouse("BR-10-COV", replacement);
     assertNotNull(out);
 
-    var found = warehouseRepository.findByBusinessUnitCode("BR-10");
+    var found = warehouseRepository.findByBusinessUnitCode("BR-10-COV");
     assertNotNull(found);
-    assertEquals("L-NEW", found.location);
-    assertEquals(2, found.stock.intValue());
+    assertEquals("AMSTERDAM-002", found.location);
+    assertEquals(1, found.stock.intValue());
   }
 
   @Test
@@ -55,7 +55,7 @@ public class WarehouseResourceImplCoverageTest {
   public void testArchive_happyPath_setsArchivedAt() {
     Warehouse api = new Warehouse();
     api.setBusinessUnitCode("BR-11");
-    api.setLocation("L-A");
+    api.setLocation("AMSTERDAM-001");
     api.setCapacity(5);
     api.setStock(0);
 
