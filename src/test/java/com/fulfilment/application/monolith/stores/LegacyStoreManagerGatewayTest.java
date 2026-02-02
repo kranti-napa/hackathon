@@ -84,3 +84,4 @@ public class LegacyStoreManagerGatewayTest {
     Assertions.assertDoesNotThrow(() -> g.updateStoreOnLegacySystem(s));
     Assertions.assertDoesNotThrow(() -> g.deleteStoreOnLegacySystem(s));
   }
+}

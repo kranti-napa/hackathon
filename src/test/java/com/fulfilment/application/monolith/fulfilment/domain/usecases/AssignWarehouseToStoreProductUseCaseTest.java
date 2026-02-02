@@ -100,3 +100,4 @@ public class AssignWarehouseToStoreProductUseCaseTest {
     assertThrows(ConflictException.class, () -> useCase.assign("S1", "P21", "W1"));
     assertThrows(ConflictException.class, () -> useCase.assign("S11", "P1", "W1"));
   }
+}

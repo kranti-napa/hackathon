@@ -162,3 +162,4 @@ public class CreateWarehouseUseCaseTest {
     assertEquals(3, testStore.countByLocation("ROTTERDAM-001"));
     assertEquals(0, testStore.countByLocation("NON-EXISTENT"));
   }
+}

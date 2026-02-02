@@ -147,3 +147,4 @@ public class StoreResourceUnitTest {
   public void delete_nullId_throwsValidation() {
     assertThrows(ValidationException.class, () -> resource.delete(null));
   }
+}
