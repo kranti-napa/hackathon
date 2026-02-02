@@ -66,20 +66,23 @@ public class AssignWarehouseToStoreProductUseCase {
         warehousesForStore = warehousesInStore.size();
         productsInWarehouse = productsInWarehouseSet.size();
 
-        // Constraint 1 check
-        if (warehousesForProductInStore >= 2) {
+        // Constraint 1 check (allow existing warehouse for this product in this store)
+        if (warehousesForProductInStore >= 2
+            && !warehousesInProduct.contains(warehouseBusinessUnitCode)) {
             throw new ConflictException(
                 AppConstants.ERR_ASSIGN_MAX_WAREHOUSES_PER_PRODUCT);
         }
 
-        // Constraint 2 check
-        if (warehousesForStore >= 3) {
+        // Constraint 2 check (allow existing warehouse for this store)
+        if (warehousesForStore >= 3
+            && !warehousesInStore.contains(warehouseBusinessUnitCode)) {
             throw new ConflictException(
                 AppConstants.ERR_ASSIGN_MAX_WAREHOUSES_PER_STORE);
         }
 
-        // Constraint 3 check
-        if (productsInWarehouse >= 5) {
+        // Constraint 3 check (allow existing product for this warehouse)
+        if (productsInWarehouse >= 5
+            && !productsInWarehouseSet.contains(productId)) {
             throw new ConflictException(
                 AppConstants.ERR_ASSIGN_MAX_PRODUCTS_PER_WAREHOUSE);
         }
