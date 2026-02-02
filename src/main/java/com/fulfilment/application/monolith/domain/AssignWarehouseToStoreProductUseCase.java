@@ -90,6 +90,6 @@ public class AssignWarehouseToStoreProductUseCase {
             productId,
             warehouseBusinessUnitCode
         );
-        assignmentStore.save(assignment);
+        assignmentStore.create(assignment);
     }
 }
