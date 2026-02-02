@@ -63,7 +63,11 @@ public class WarehouseResourceImplCoverageTest {
 
     resource.archiveAWarehouseUnitByID("BR-11");
 
-    var found = warehouseRepository.findByBusinessUnitCode("BR-11");
+    // findByBusinessUnitCode filters archived records, use getAll to find archived warehouse
+    var found = warehouseRepository.getAll().stream()
+        .filter(w -> "BR-11".equals(w.businessUnitCode))
+        .findFirst()
+        .orElse(null);
     assertNotNull(found);
     assertNotNull(found.archivedAt);
   }

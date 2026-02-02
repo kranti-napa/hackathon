@@ -230,6 +230,20 @@ public class StoreResource {
 
         entity.delete();
         entityManager.flush();
+
+        // Register post-commit callback to sync with legacy system
+        txRegistry.registerInterposedSynchronization(new Synchronization() {
+            @Override
+            public void beforeCompletion() {}
+
+            @Override
+            public void afterCompletion(int status) {
+                if (status == Status.STATUS_COMMITTED) {
+                    legacyStoreManagerGateway.deleteStoreOnLegacySystem(entity);
+                }
+            }
+        });
+
         entityManager.clear();
 
         return Response.noContent().build();

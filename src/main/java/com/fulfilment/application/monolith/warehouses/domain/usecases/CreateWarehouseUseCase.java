@@ -44,9 +44,7 @@ public class CreateWarehouseUseCase implements CreateWarehouseOperation {
                 locationGateway.resolveByIdentifier(warehouse.location);
 
         // 3. Warehouse Creation Feasibility
-        long warehousesInLocation = warehouseStore.getAll().stream()
-                .filter(w -> w.location.equals(location.identification))
-                .count();
+        long warehousesInLocation = warehouseStore.countByLocation(location.identification);
 
         if (warehousesInLocation >= location.maxNumberOfWarehouses) {
             throw new ConflictException(AppConstants.ERR_WAREHOUSE_MAX_PER_LOCATION);

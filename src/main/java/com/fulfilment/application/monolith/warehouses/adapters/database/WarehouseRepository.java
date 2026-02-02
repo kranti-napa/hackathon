@@ -100,11 +100,21 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
       return null;
     }
 
-    DbWarehouse existing = find(FIELD_BUSINESS_UNIT_CODE, buCode).firstResult();
+    // Find only active (non-archived) warehouse
+    DbWarehouse existing = find(FIELD_BUSINESS_UNIT_CODE + " = ?1 and archivedAt is null", buCode).firstResult();
     if (existing == null) {
       LOGGER.debugf(LOG_FIND_NOTHING, buCode);
       return null;
     }
     return existing.toWarehouse();
+  }
+
+  @Override
+  public long countByLocation(String location) {
+    if (location == null) {
+      return 0;
+    }
+    // Use count query for efficiency instead of loading all records
+    return count("location = ?1 and archivedAt is null", location);
   }
 }
