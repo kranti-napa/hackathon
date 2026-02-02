@@ -80,8 +80,16 @@ public class AssignWarehouseToStoreProductUseCase {
 
         // Constraint 3 check
         if (productsInWarehouse >= 5) {
-                warehouseBusinessUnitCode
-            )
+            throw new ConflictException(
+                AppConstants.ERR_ASSIGN_MAX_PRODUCTS_PER_WAREHOUSE);
+        }
+
+        // Create and save the assignment
+        FulfilmentAssignment assignment = new FulfilmentAssignment(
+            storeId,
+            productId,
+            warehouseBusinessUnitCode
         );
+        assignmentStore.save(assignment);
     }
 }
