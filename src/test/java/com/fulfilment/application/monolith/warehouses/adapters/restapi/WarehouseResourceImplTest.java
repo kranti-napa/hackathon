@@ -67,8 +67,8 @@ public class WarehouseResourceImplTest {
     WarehouseStore store = new InMemoryWarehouseStore();
     TestWarehouseRepository repo = new TestWarehouseRepository(store);
     CreateWarehouseUseCase createUseCase = new CreateWarehouseUseCase(store, new LocationGateway());
-    ReplaceWarehouseUseCase replaceUseCase = new ReplaceWarehouseUseCase(store);
     ArchiveWarehouseUseCase archiveUseCase = new ArchiveWarehouseUseCase(store);
+    ReplaceWarehouseUseCase replaceUseCase = new ReplaceWarehouseUseCase(store, archiveUseCase);
 
     Field f = WarehouseResourceImpl.class.getDeclaredField("warehouseRepository");
     f.setAccessible(true);
