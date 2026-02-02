@@ -34,7 +34,11 @@ public class ArchiveWarehouseUseCaseTest {
 
     useCase.archive(toArchive);
 
-    Warehouse persisted = store.findByBusinessUnitCode("MWH.500");
+    Warehouse persisted = store.getAll().stream()
+      .filter(w -> "MWH.500".equals(w.businessUnitCode))
+      .findFirst()
+      .orElse(null);
+    assertNotNull(persisted);
     assertNotNull(persisted.archivedAt);
   }
 
