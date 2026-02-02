@@ -55,4 +55,32 @@ public class LegacyStoreManagerGatewayTest {
       }
     }
   }
-}
+
+  @Test
+  public void deleteWithNullStore_isNoOp() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    // should not throw
+    g.deleteStoreOnLegacySystem(null);
+  }
+
+  @Test
+  public void deleteStore_happyPath() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("store-to-delete");
+    s.quantityProductsInStock = 10;
+    // should run without throwing (writes to temp file then deletes)
+    Assertions.assertDoesNotThrow(() -> g.deleteStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void delete_and_create_update_withValidStore() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+
+    Store s = new Store("store-lifecycle");
+    s.quantityProductsInStock = 25;
+
+    // should run without throwing for all operations
+    Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+    Assertions.assertDoesNotThrow(() -> g.updateStoreOnLegacySystem(s));
+    Assertions.assertDoesNotThrow(() -> g.deleteStoreOnLegacySystem(s));
+  }

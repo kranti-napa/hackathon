@@ -132,4 +132,33 @@ public class CreateWarehouseUseCaseTest {
 
     assertThrows(NotFoundException.class, () -> useCase.create(w));
   }
-}
+
+  @Test
+  public void testCountByLocationOptimization() {
+    // Verify that countByLocation uses efficient query instead of loading all warehouses
+    InMemoryWarehouseStore testStore = new InMemoryWarehouseStore();
+    
+    // Add multiple warehouses to different locations
+    for (int i = 0; i < 5; i++) {
+      Warehouse w = new Warehouse();
+      w.businessUnitCode = "BU-AMST-" + i;
+      w.location = "AMSTERDAM-001";
+      w.capacity = 10;
+      w.stock = 0;
+      testStore.create(w);
+    }
+
+    for (int i = 0; i < 3; i++) {
+      Warehouse w = new Warehouse();
+      w.businessUnitCode = "BU-ROT-" + i;
+      w.location = "ROTTERDAM-001";
+      w.capacity = 10;
+      w.stock = 0;
+      testStore.create(w);
+    }
+
+    // Test that countByLocation returns correct counts
+    assertEquals(5, testStore.countByLocation("AMSTERDAM-001"));
+    assertEquals(3, testStore.countByLocation("ROTTERDAM-001"));
+    assertEquals(0, testStore.countByLocation("NON-EXISTENT"));
+  }

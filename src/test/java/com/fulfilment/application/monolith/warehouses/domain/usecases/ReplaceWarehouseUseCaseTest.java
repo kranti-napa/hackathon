@@ -6,6 +6,7 @@ import com.fulfilment.application.monolith.common.exceptions.ConflictException;
 import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
 import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.usecases.testhelpers.InMemoryWarehouseStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,12 +14,14 @@ import org.junit.jupiter.api.Test;
 public class ReplaceWarehouseUseCaseTest {
 
   InMemoryWarehouseStore store;
+  ArchiveWarehouseOperation archiveOperation;
   ReplaceWarehouseUseCase useCase;
 
   @BeforeEach
   public void setup() {
     store = new InMemoryWarehouseStore();
-    useCase = new ReplaceWarehouseUseCase(store);
+    archiveOperation = new ArchiveWarehouseUseCase(store);
+    useCase = new ReplaceWarehouseUseCase(store, archiveOperation);
   }
 
   @Test
@@ -36,10 +39,21 @@ public class ReplaceWarehouseUseCaseTest {
 
     useCase.replace(replacement);
 
+    // Verify new warehouse is created with updated capacity
     Warehouse persisted = store.findByBusinessUnitCode("MWH.900");
     assertNotNull(persisted);
     assertEquals(20, persisted.capacity.intValue());
     assertEquals(5, persisted.stock.intValue());
+    assertNull(persisted.archivedAt, "New warehouse should not be archived");
+
+    // Verify old warehouse is archived (history preserved)
+    Warehouse archived = store.getAll().stream()
+        .filter(w -> w.businessUnitCode.equals("MWH.900") && w.archivedAt != null)
+        .findFirst()
+        .orElse(null);
+    assertNotNull(archived, "Old warehouse should be archived");
+    assertEquals(10, archived.capacity.intValue(), "Archived warehouse should have original capacity");
+    assertEquals(5, archived.stock.intValue());
   }
 
   @Test
@@ -113,5 +127,41 @@ public class ReplaceWarehouseUseCaseTest {
     replacement.stock = 1;
 
     assertThrows(ValidationException.class, () -> useCase.replace(replacement));
+  }
+
+  @Test
+  public void testReplaceCapacityInsufficientForStockThrows() {
+    Warehouse existing = new Warehouse();
+    existing.businessUnitCode = "MWH.702";
+    existing.capacity = 10;
+    existing.stock = 5;
+    store.create(existing);
+
+    Warehouse replacement = new Warehouse();
+    replacement.businessUnitCode = "MWH.702";
+    replacement.capacity = 3; // less than stock of 5
+    replacement.stock = 5;
+
+    assertThrows(ValidationException.class, () -> useCase.replace(replacement));
+  }
+
+  @Test
+  public void testReplaceCapacityEqualToStockSucceeds() {
+    Warehouse existing = new Warehouse();
+    existing.businessUnitCode = "MWH.703";
+    existing.capacity = 10;
+    existing.stock = 5;
+    store.create(existing);
+
+    Warehouse replacement = new Warehouse();
+    replacement.businessUnitCode = "MWH.703";
+    replacement.capacity = 5; // equal to stock
+    replacement.stock = 5;
+
+    useCase.replace(replacement);
+
+    Warehouse persisted = store.findByBusinessUnitCode("MWH.703");
+    assertNotNull(persisted);
+    assertEquals(5, persisted.capacity.intValue());
   }
 }

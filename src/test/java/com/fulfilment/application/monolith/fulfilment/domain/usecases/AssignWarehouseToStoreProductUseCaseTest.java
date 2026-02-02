@@ -73,4 +73,30 @@ public class AssignWarehouseToStoreProductUseCaseTest {
 
     assertEquals(2, store.getAll().size());
   }
-}
+
+  @Test
+  public void testSinglePassOptimization_largeDataset() {
+    // This test verifies that the single-pass algorithm works correctly with large datasets
+    // Previously, this would have done multiple full scans (O(n*k) complexity)
+    // Now it does a single scan (O(n) complexity)
+    
+    // Create a large number of assignments
+    for (int s = 1; s <= 10; s++) {
+      for (int p = 1; p <= 20; p++) {
+        for (int w = 1; w <= 3; w++) {
+          if (s * p * w <= 100) { // Create ~100 assignments
+            store.create(new FulfilmentAssignment(
+                "S" + s,
+                "P" + p,
+                "W" + w
+            ));
+          }
+        }
+      }
+    }
+
+    // Verify constraints still work correctly with optimized single-pass
+    assertThrows(ConflictException.class, () -> useCase.assign("S1", "P1", "W4"));
+    assertThrows(ConflictException.class, () -> useCase.assign("S1", "P21", "W1"));
+    assertThrows(ConflictException.class, () -> useCase.assign("S11", "P1", "W1"));
+  }

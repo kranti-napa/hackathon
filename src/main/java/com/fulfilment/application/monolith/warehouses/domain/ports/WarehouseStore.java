@@ -14,4 +14,9 @@ public interface WarehouseStore {
   void remove(Warehouse warehouse);
 
   Warehouse findByBusinessUnitCode(String buCode);
+
+  /**
+   * Count warehouses by location filter (optimized for large datasets)
+   */
+  long countByLocation(String location);
 }

@@ -25,8 +25,11 @@ public class InMemoryWarehouseStore implements WarehouseStore {
     for (int i = 0; i < list.size(); i++) {
       Warehouse w = list.get(i);
       if (w.businessUnitCode != null && w.businessUnitCode.equals(warehouse.businessUnitCode)) {
-        list.set(i, warehouse);
-        return;
+        // Update: preserve the old warehouse, find the first unarchived one
+        if (w.archivedAt == null) {
+          list.set(i, warehouse);
+          return;
+        }
       }
     }
     // if not found, add
@@ -40,9 +43,20 @@ public class InMemoryWarehouseStore implements WarehouseStore {
 
   @Override
   public Warehouse findByBusinessUnitCode(String buCode) {
+    // Find the first active (not archived) warehouse with matching business unit code
     return list.stream()
-        .filter(w -> w.businessUnitCode != null && w.businessUnitCode.equals(buCode))
+        .filter(w -> w.businessUnitCode != null && w.businessUnitCode.equals(buCode) && w.archivedAt == null)
         .findFirst()
         .orElse(null);
+  }
+
+  @Override
+  public long countByLocation(String location) {
+    if (location == null) {
+      return 0;
+    }
+    return list.stream()
+        .filter(w -> w.location != null && w.location.equals(location) && w.archivedAt == null)
+        .count();
   }
 }
