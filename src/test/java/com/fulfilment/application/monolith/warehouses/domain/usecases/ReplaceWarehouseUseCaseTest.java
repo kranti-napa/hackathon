@@ -164,4 +164,26 @@ public class ReplaceWarehouseUseCaseTest {
     assertNotNull(persisted);
     assertEquals(5, persisted.capacity.intValue());
   }
+
+  @Test
+  public void testReplaceWithInsufficientCapacityForExistingStockThrows() {
+    // Scenario: Warehouse holding 100 items with capacity 100
+    Warehouse existing = new Warehouse();
+    existing.businessUnitCode = "MWH.704";
+    existing.capacity = 100;
+    existing.stock = 100;
+    store.create(existing);
+
+    // Try to replace with warehouse that can only hold 50 items
+    Warehouse replacement = new Warehouse();
+    replacement.businessUnitCode = "MWH.704";
+    replacement.capacity = 50; // INSUFFICIENT for existing stock of 100
+    replacement.stock = 100;
+
+    assertThrows(
+        ValidationException.class,
+        () -> useCase.replace(replacement),
+        "Should reject replacement with capacity insufficient for existing stock"
+    );
+  }
 }
