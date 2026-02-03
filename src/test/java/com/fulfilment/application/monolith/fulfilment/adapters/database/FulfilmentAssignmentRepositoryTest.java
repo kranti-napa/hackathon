@@ -64,4 +64,55 @@ public class FulfilmentAssignmentRepositoryTest {
         List<FulfilmentAssignment> all = repository.getAll();
         assertEquals(0, all.size());
     }
+
+    @Test
+    @Transactional
+    public void testGetAllReturnsCorrectMappings() {
+        repository.create(new FulfilmentAssignment("Store1", "Prod1", "Warehouse1"));
+        repository.create(new FulfilmentAssignment("Store2", "Prod2", "Warehouse2"));
+
+        List<FulfilmentAssignment> all = repository.getAll();
+        assertEquals(2, all.size());
+        
+        FulfilmentAssignment first = all.stream()
+            .filter(a -> "Store1".equals(a.storeId))
+            .findFirst()
+            .orElseThrow();
+        assertEquals("Prod1", first.productId);
+        assertEquals("Warehouse1", first.warehouseBusinessUnitCode);
+    }
+
+    @Test
+    @Transactional
+    public void testCreateMultipleDifferentAssignments() {
+        repository.create(new FulfilmentAssignment("A", "B", "C"));
+        repository.create(new FulfilmentAssignment("D", "E", "F"));
+        repository.create(new FulfilmentAssignment("G", "H", "I"));
+        repository.create(new FulfilmentAssignment("J", "K", "L"));
+
+        List<FulfilmentAssignment> all = repository.getAll();
+        assertEquals(4, all.size());
+    }
+
+    @Test
+    @Transactional
+    public void testDeleteAllWithMultipleRecords() {
+        repository.create(new FulfilmentAssignment("S1", "P1", "W1"));
+        repository.create(new FulfilmentAssignment("S2", "P2", "W2"));
+        repository.create(new FulfilmentAssignment("S3", "P3", "W3"));
+
+        assertEquals(3, repository.getAll().size());
+
+        repository.deleteAll();
+
+        assertEquals(0, repository.getAll().size());
+    }
+
+    @Test
+    @Transactional
+    public void testDeleteAllWhenEmpty() {
+        repository.deleteAll();
+        List<FulfilmentAssignment> all = repository.getAll();
+        assertEquals(0, all.size());
+    }
 }
