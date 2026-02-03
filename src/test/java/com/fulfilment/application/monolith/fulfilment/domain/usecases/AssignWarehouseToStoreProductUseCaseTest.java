@@ -99,4 +99,16 @@ public class AssignWarehouseToStoreProductUseCaseTest {
     // Should have created ~100 assignments successfully
     assertTrue(store.getAll().size() >= 50, "Test dataset should have 50+ assignments");
   }
+
+  @Test
+  public void testAssignDuplicate_shouldNotAddAgain() {
+    useCase.assign("S1", "P1", "W1");
+    assertEquals(1, store.getAll().size());
+
+    // Try to assign the same combination again
+    useCase.assign("S1", "P1", "W1");
+    
+    // Should still have only 1 assignment (duplicate is skipped)
+    assertEquals(1, store.getAll().size());
+  }
 }
