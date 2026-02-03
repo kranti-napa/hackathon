@@ -64,6 +64,12 @@ public final class AppConstants {
     public static final String ERR_WAREHOUSE_CAPACITY_INSUFFICIENT =
             "Warehouse capacity must be greater than or equal to stock";
 
+    public static final String ERR_WAREHOUSE_STOCK_EXCEEDS_CAPACITY =
+            "Warehouse stock cannot exceed its capacity";
+
+    public static final String ERR_WAREHOUSE_LOCATION_CAPACITY_EXCEEDED =
+            "Total warehouse capacity would exceed location maximum capacity";
+
     public static final String ERR_LOCATION_NOT_FOUND =
             "No location found for identifier: %s";
 

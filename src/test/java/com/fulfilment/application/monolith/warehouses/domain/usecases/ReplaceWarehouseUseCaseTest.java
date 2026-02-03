@@ -8,6 +8,7 @@ import com.fulfilment.application.monolith.common.exceptions.ValidationException
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.usecases.testhelpers.InMemoryWarehouseStore;
+import com.fulfilment.application.monolith.location.LocationGateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,25 +16,29 @@ public class ReplaceWarehouseUseCaseTest {
 
   InMemoryWarehouseStore store;
   ArchiveWarehouseOperation archiveOperation;
+  LocationGateway locationGateway;
   ReplaceWarehouseUseCase useCase;
 
   @BeforeEach
   public void setup() {
     store = new InMemoryWarehouseStore();
     archiveOperation = new ArchiveWarehouseUseCase(store);
-    useCase = new ReplaceWarehouseUseCase(store, archiveOperation);
+    locationGateway = new LocationGateway();
+    useCase = new ReplaceWarehouseUseCase(store, archiveOperation, locationGateway);
   }
 
   @Test
   public void testReplaceHappyPath() {
     Warehouse existing = new Warehouse();
     existing.businessUnitCode = "MWH.900";
+    existing.location = "AMSTERDAM-001";
     existing.capacity = 10;
     existing.stock = 5;
     store.create(existing);
 
     Warehouse replacement = new Warehouse();
     replacement.businessUnitCode = "MWH.900";
+    replacement.location = "AMSTERDAM-001";
     replacement.capacity = 20; // allowed
     replacement.stock = 5; // must match existing
 
@@ -60,6 +65,7 @@ public class ReplaceWarehouseUseCaseTest {
   public void testReplaceNotFoundThrows() {
     Warehouse replacement = new Warehouse();
     replacement.businessUnitCode = "NOPE";
+    replacement.location = "AMSTERDAM-001";
     replacement.capacity = 10;
     replacement.stock = 0;
 
@@ -70,12 +76,14 @@ public class ReplaceWarehouseUseCaseTest {
   public void testReplaceStockMismatchThrows() {
     Warehouse existing = new Warehouse();
     existing.businessUnitCode = "MWH.800";
+    existing.location = "AMSTERDAM-001";
     existing.capacity = 10;
     existing.stock = 2;
     store.create(existing);
 
     Warehouse replacement = new Warehouse();
     replacement.businessUnitCode = "MWH.800";
+    replacement.location = "AMSTERDAM-001";
     replacement.capacity = 12;
     replacement.stock = 3; // different
 
@@ -86,12 +94,14 @@ public class ReplaceWarehouseUseCaseTest {
   public void testReplaceInvalidCapacityThrows() {
     Warehouse existing = new Warehouse();
     existing.businessUnitCode = "MWH.700";
+    existing.location = "AMSTERDAM-001";
     existing.capacity = 10;
     existing.stock = 1;
     store.create(existing);
 
     Warehouse replacement = new Warehouse();
     replacement.businessUnitCode = "MWH.700";
+    replacement.location = "AMSTERDAM-001";
     replacement.capacity = 0; // invalid
     replacement.stock = 1;
 
@@ -107,6 +117,7 @@ public class ReplaceWarehouseUseCaseTest {
   public void testReplaceNullBusinessUnitThrows() {
     Warehouse replacement = new Warehouse();
     replacement.businessUnitCode = null;
+    replacement.location = "AMSTERDAM-001";
     replacement.capacity = 10;
     replacement.stock = 1;
 
@@ -117,12 +128,14 @@ public class ReplaceWarehouseUseCaseTest {
   public void testReplaceNullCapacityThrows() {
     Warehouse existing = new Warehouse();
     existing.businessUnitCode = "MWH.701";
+    existing.location = "AMSTERDAM-001";
     existing.capacity = 10;
     existing.stock = 1;
     store.create(existing);
 
     Warehouse replacement = new Warehouse();
     replacement.businessUnitCode = "MWH.701";
+    replacement.location = "AMSTERDAM-001";
     replacement.capacity = null;
     replacement.stock = 1;
 
@@ -133,12 +146,14 @@ public class ReplaceWarehouseUseCaseTest {
   public void testReplaceCapacityInsufficientForStockThrows() {
     Warehouse existing = new Warehouse();
     existing.businessUnitCode = "MWH.702";
+    existing.location = "AMSTERDAM-001";
     existing.capacity = 10;
     existing.stock = 5;
     store.create(existing);
 
     Warehouse replacement = new Warehouse();
     replacement.businessUnitCode = "MWH.702";
+    replacement.location = "AMSTERDAM-001";
     replacement.capacity = 3; // less than stock of 5
     replacement.stock = 5;
 
@@ -149,12 +164,14 @@ public class ReplaceWarehouseUseCaseTest {
   public void testReplaceCapacityEqualToStockSucceeds() {
     Warehouse existing = new Warehouse();
     existing.businessUnitCode = "MWH.703";
+    existing.location = "AMSTERDAM-001";
     existing.capacity = 10;
     existing.stock = 5;
     store.create(existing);
 
     Warehouse replacement = new Warehouse();
     replacement.businessUnitCode = "MWH.703";
+    replacement.location = "AMSTERDAM-001";
     replacement.capacity = 5; // equal to stock
     replacement.stock = 5;
 
@@ -170,6 +187,7 @@ public class ReplaceWarehouseUseCaseTest {
     // Scenario: Warehouse holding 100 items with capacity 100
     Warehouse existing = new Warehouse();
     existing.businessUnitCode = "MWH.704";
+    existing.location = "AMSTERDAM-001";
     existing.capacity = 100;
     existing.stock = 100;
     store.create(existing);
@@ -177,6 +195,7 @@ public class ReplaceWarehouseUseCaseTest {
     // Try to replace with warehouse that can only hold 50 items
     Warehouse replacement = new Warehouse();
     replacement.businessUnitCode = "MWH.704";
+    replacement.location = "AMSTERDAM-001";
     replacement.capacity = 50; // INSUFFICIENT for existing stock of 100
     replacement.stock = 100;
 
@@ -184,6 +203,50 @@ public class ReplaceWarehouseUseCaseTest {
         ValidationException.class,
         () -> useCase.replace(replacement),
         "Should reject replacement with capacity insufficient for existing stock"
+    );
+  }
+
+  @Test
+  public void testReplaceLocationCapacityExceededThrows() {
+    // ZWOLLE-001 has maxCapacity of 40
+    // Create another warehouse at same location with 30 capacity
+    Warehouse other = new Warehouse();
+    other.businessUnitCode = "MWH.OTHER";
+    other.location = "ZWOLLE-001";
+    other.capacity = 30;
+    other.stock = 0;
+    store.create(other);
+
+    // Create existing warehouse with capacity 5 (total: 35)
+    Warehouse existing = new Warehouse();
+    existing.businessUnitCode = "MWH.705";
+    existing.location = "ZWOLLE-001";
+    existing.capacity = 5;
+    existing.stock = 2;
+    store.create(existing);
+
+    // Try to replace with capacity 5, which would keep total at 40 (30 + 10)
+    // Actually let's replace 5 with 10: 30 + 10 = 40 (at limit, OK)
+    Warehouse replacement = new Warehouse();
+    replacement.businessUnitCode = "MWH.705";
+    replacement.location = "ZWOLLE-001";
+    replacement.capacity = 10; // 30 + 10 = 40 (at limit, OK)
+    replacement.stock = 2;
+
+    useCase.replace(replacement); // Should succeed
+
+    // Now try capacity 11, which would exceed
+    Warehouse existing2 = store.findByBusinessUnitCode("MWH.705");
+    Warehouse tooLarge = new Warehouse();
+    tooLarge.businessUnitCode = "MWH.705";
+    tooLarge.location = "ZWOLLE-001";
+    tooLarge.capacity = 11; // 30 + 11 = 41 > 40
+    tooLarge.stock = 2;
+
+    assertThrows(
+        ConflictException.class,
+        () -> useCase.replace(tooLarge),
+        "Should reject replacement that exceeds location max capacity"
     );
   }
 }

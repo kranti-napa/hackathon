@@ -5,9 +5,11 @@ import com.fulfilment.application.monolith.common.exceptions.ConflictException;
 import com.fulfilment.application.monolith.common.exceptions.NotFoundException;
 import com.fulfilment.application.monolith.common.exceptions.ValidationException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.models.Location;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ReplaceWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
+import com.fulfilment.application.monolith.location.LocationGateway;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.LocalDateTime;
 
@@ -16,10 +18,15 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
 
 	 private final WarehouseStore warehouseStore;
 	 private final ArchiveWarehouseOperation archiveWarehouseOperation;
+	 private final LocationGateway locationGateway;
 
-	    public ReplaceWarehouseUseCase(WarehouseStore warehouseStore, ArchiveWarehouseOperation archiveWarehouseOperation) {
+	    public ReplaceWarehouseUseCase(
+	            WarehouseStore warehouseStore,
+	            ArchiveWarehouseOperation archiveWarehouseOperation,
+	            LocationGateway locationGateway) {
 	        this.warehouseStore = warehouseStore;
 	        this.archiveWarehouseOperation = archiveWarehouseOperation;
+	        this.locationGateway = locationGateway;
 	    }
 
 	    @Override
@@ -50,6 +57,21 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
         // Validate new capacity is sufficient to hold the existing stock
         if (newWarehouse.capacity < existing.stock) {
             throw new ValidationException(AppConstants.ERR_WAREHOUSE_CAPACITY_INSUFFICIENT);
+        }
+
+        // Validate location capacity constraints if location or capacity changed
+        if (!existing.location.equals(newWarehouse.location) || 
+            !existing.capacity.equals(newWarehouse.capacity)) {
+            
+            Location location = locationGateway.resolveByIdentifier(newWarehouse.location);
+            
+            // Calculate total capacity: current location total - old capacity + new capacity
+            int currentTotalCapacity = warehouseStore.getTotalCapacityByLocation(location.identification);
+            int adjustedCapacity = currentTotalCapacity - existing.capacity + newWarehouse.capacity;
+            
+            if (adjustedCapacity > location.maxCapacity) {
+                throw new ConflictException(AppConstants.ERR_WAREHOUSE_LOCATION_CAPACITY_EXCEEDED);
+            }
         }
 
         // Archive the existing warehouse instead of overwriting it

@@ -162,4 +162,35 @@ public class CreateWarehouseUseCaseTest {
     assertEquals(3, testStore.countByLocation("ROTTERDAM-001"));
     assertEquals(0, testStore.countByLocation("NON-EXISTENT"));
   }
+
+  @Test
+  public void testCreateStockExceedsCapacityThrows() {
+    Warehouse w = new Warehouse();
+    w.businessUnitCode = "BU-OVER";
+    w.location = "AMSTERDAM-001";
+    w.capacity = 10;
+    w.stock = 15; // exceeds capacity
+
+    assertThrows(ValidationException.class, () -> useCase.create(w));
+  }
+
+  @Test
+  public void testCreateLocationCapacityExceededThrows() {
+    // ZWOLLE-001 has maxCapacity of 40
+    Warehouse existing = new Warehouse();
+    existing.businessUnitCode = "BU-EXIST";
+    existing.location = "ZWOLLE-001";
+    existing.capacity = 35; // total will be 35
+    existing.stock = 0;
+    store.create(existing);
+
+    // Try to add another warehouse with capacity 10, which would exceed 40
+    Warehouse w = new Warehouse();
+    w.businessUnitCode = "BU-NEW-CAP";
+    w.location = "ZWOLLE-001";
+    w.capacity = 10; // 35 + 10 = 45 > 40
+    w.stock = 0;
+
+    assertThrows(ConflictException.class, () -> useCase.create(w));
+  }
 }
