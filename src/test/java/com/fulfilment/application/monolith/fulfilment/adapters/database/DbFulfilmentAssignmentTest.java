@@ -55,4 +55,37 @@ public class DbFulfilmentAssignmentTest {
         assertEquals(original.productId, converted.productId);
         assertEquals(original.warehouseBusinessUnitCode, converted.warehouseBusinessUnitCode);
     }
+
+    @Test
+    public void testEmptyStrings() {
+        DbFulfilmentAssignment db = new DbFulfilmentAssignment("", "", "");
+        assertEquals("", db.storeId);
+        assertEquals("", db.productId);
+        assertEquals("", db.warehouseBusinessUnitCode);
+
+        FulfilmentAssignment assignment = db.toFulfilmentAssignment();
+        assertEquals("", assignment.storeId);
+        assertEquals("", assignment.productId);
+        assertEquals("", assignment.warehouseBusinessUnitCode);
+    }
+
+    @Test
+    public void testLongStrings() {
+        String longString = "A".repeat(100);
+        DbFulfilmentAssignment db = new DbFulfilmentAssignment(longString, longString, longString);
+        assertEquals(longString, db.storeId);
+        assertEquals(longString, db.productId);
+        assertEquals(longString, db.warehouseBusinessUnitCode);
+    }
+
+    @Test
+    public void testToFulfilmentAssignmentWithNulls() {
+        DbFulfilmentAssignment db = new DbFulfilmentAssignment();
+        FulfilmentAssignment assignment = db.toFulfilmentAssignment();
+        
+        assertNotNull(assignment);
+        assertNull(assignment.storeId);
+        assertNull(assignment.productId);
+        assertNull(assignment.warehouseBusinessUnitCode);
+    }
 }

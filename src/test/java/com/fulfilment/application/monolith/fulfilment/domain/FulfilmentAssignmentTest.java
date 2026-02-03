@@ -45,4 +45,14 @@ public class FulfilmentAssignmentTest {
         assertEquals("P2", assignment.productId);
         assertEquals("W2", assignment.warehouseBusinessUnitCode);
     }
+
+    @Test
+    public void testLongStringValues() {
+        String longString = "A".repeat(100);
+        FulfilmentAssignment assignment = new FulfilmentAssignment(longString, longString, longString);
+        
+        assertEquals(longString, assignment.storeId);
+        assertEquals(longString, assignment.productId);
+        assertEquals(longString, assignment.warehouseBusinessUnitCode);
+    }
 }

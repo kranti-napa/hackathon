@@ -84,4 +84,138 @@ public class LegacyStoreManagerGatewayTest {
     Assertions.assertDoesNotThrow(() -> g.updateStoreOnLegacySystem(s));
     Assertions.assertDoesNotThrow(() -> g.deleteStoreOnLegacySystem(s));
   }
+
+  @Test
+  public void updateWithNullStore_isNoOp() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Assertions.assertDoesNotThrow(() -> g.updateStoreOnLegacySystem(null));
+  }
+
+  @Test
+  public void createStoreWithNullName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store();
+    s.quantityProductsInStock = 10;
+    Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void createStoreWithEmptyName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("");
+    s.quantityProductsInStock = 5;
+    Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void createStoreWithLongName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("A".repeat(1000));
+    s.quantityProductsInStock = 100;
+    Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void createStoreWithSpecialCharacters() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("Store!@#$%^&*()");
+    s.quantityProductsInStock = 15;
+    Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void createStoreWithZeroStock() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("Zero Stock Store");
+    s.quantityProductsInStock = 0;
+    Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void createStoreWithNegativeStock() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("Negative Stock Store");
+    s.quantityProductsInStock = -10;
+    Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void updateStoreWithNullName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store();
+    s.quantityProductsInStock = 20;
+    Assertions.assertDoesNotThrow(() -> g.updateStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void deleteStoreWithNullName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store();
+    s.quantityProductsInStock = 5;
+    Assertions.assertDoesNotThrow(() -> g.deleteStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void createStoreWithOneCharName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("A");
+    s.quantityProductsInStock = 10;
+    Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void createStoreWithTwoCharName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("AB");
+    s.quantityProductsInStock = 20;
+    Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void createStoreWithExactlyThreeChars() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("ABC");
+    s.quantityProductsInStock = 30;
+    Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void updateStoreWithShortName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("XY");
+    s.quantityProductsInStock = 15;
+    Assertions.assertDoesNotThrow(() -> g.updateStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void deleteStoreWithShortName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("Z");
+    s.quantityProductsInStock = 5;
+    Assertions.assertDoesNotThrow(() -> g.deleteStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void createStoreWithVeryLongName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("ThisIsAVeryLongStoreNameThatExceedsTenCharacters");
+    s.quantityProductsInStock = 100;
+    Assertions.assertDoesNotThrow(() -> g.createStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void updateStoreWithVeryLongName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("AnotherVeryLongStoreName");
+    s.quantityProductsInStock = 50;
+    Assertions.assertDoesNotThrow(() -> g.updateStoreOnLegacySystem(s));
+  }
+
+  @Test
+  public void deleteStoreWithVeryLongName() {
+    LegacyStoreManagerGateway g = new LegacyStoreManagerGateway();
+    Store s = new Store("YetAnotherVeryLongStoreNameForDeletion");
+    s.quantityProductsInStock = 25;
+    Assertions.assertDoesNotThrow(() -> g.deleteStoreOnLegacySystem(s));
+  }
 }

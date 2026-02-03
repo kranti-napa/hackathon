@@ -66,6 +66,28 @@ public class CreateWarehouseUseCaseTest {
   }
 
   @Test
+  public void testCreateNullCapacityThrows() {
+    Warehouse w = new Warehouse();
+    w.businessUnitCode = "BU-NULL-CAP";
+    w.location = "AMSTERDAM-001";
+    w.capacity = null;
+    w.stock = 0;
+
+    assertThrows(ValidationException.class, () -> useCase.create(w));
+  }
+
+  @Test
+  public void testCreateNullStockThrows() {
+    Warehouse w = new Warehouse();
+    w.businessUnitCode = "BU-NULL-STOCK";
+    w.location = "AMSTERDAM-001";
+    w.capacity = 100;
+    w.stock = null;
+
+    assertThrows(ValidationException.class, () -> useCase.create(w));
+  }
+
+  @Test
   public void testCreateInvalidStockThrows() {
     Warehouse w = new Warehouse();
     w.businessUnitCode = "BU-NEG2";
@@ -98,28 +120,6 @@ public class CreateWarehouseUseCaseTest {
   @Test
   public void testCreateNullWarehouseThrows() {
     assertThrows(ValidationException.class, () -> useCase.create(null));
-  }
-
-  @Test
-  public void testCreateNullCapacityThrows() {
-    Warehouse w = new Warehouse();
-    w.businessUnitCode = "BU-NOCAP";
-    w.location = "AMSTERDAM-001";
-    w.capacity = null;
-    w.stock = 1;
-
-    assertThrows(ValidationException.class, () -> useCase.create(w));
-  }
-
-  @Test
-  public void testCreateNullStockThrows() {
-    Warehouse w = new Warehouse();
-    w.businessUnitCode = "BU-NOSTOCK";
-    w.location = "AMSTERDAM-001";
-    w.capacity = 10;
-    w.stock = null;
-
-    assertThrows(ValidationException.class, () -> useCase.create(w));
   }
 
   @Test
@@ -176,19 +176,19 @@ public class CreateWarehouseUseCaseTest {
 
   @Test
   public void testCreateLocationCapacityExceededThrows() {
-    // ZWOLLE-001 has maxCapacity of 40
+    // ZWOLLE-002 has maxCapacity of 50 and allows 2 warehouses
     Warehouse existing = new Warehouse();
     existing.businessUnitCode = "BU-EXIST";
-    existing.location = "ZWOLLE-001";
-    existing.capacity = 35; // total will be 35
+    existing.location = "ZWOLLE-002";
+    existing.capacity = 45; // total will be 45
     existing.stock = 0;
     store.create(existing);
 
-    // Try to add another warehouse with capacity 10, which would exceed 40
+    // Try to add another warehouse with capacity 10, which would exceed 50
     Warehouse w = new Warehouse();
     w.businessUnitCode = "BU-NEW-CAP";
-    w.location = "ZWOLLE-001";
-    w.capacity = 10; // 35 + 10 = 45 > 40
+    w.location = "ZWOLLE-002";
+    w.capacity = 10; // 45 + 10 = 55 > 50
     w.stock = 0;
 
     assertThrows(ConflictException.class, () -> useCase.create(w));
