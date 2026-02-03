@@ -55,9 +55,20 @@ public class CreateWarehouseUseCase implements CreateWarehouseOperation {
             throw new ValidationException(AppConstants.ERR_WAREHOUSE_INVALID_CAPACITY);
         }
 
-        // 5. Stock Validation
+        // 5. Location Maximum Capacity Check
+        int currentTotalCapacity = warehouseStore.getTotalCapacityByLocation(location.identification);
+        if (currentTotalCapacity + warehouse.capacity > location.maxCapacity) {
+            throw new ConflictException(AppConstants.ERR_WAREHOUSE_LOCATION_CAPACITY_EXCEEDED);
+        }
+
+        // 6. Stock Validation
         if (warehouse.stock == null || warehouse.stock < 0) {
             throw new ValidationException(AppConstants.ERR_WAREHOUSE_INVALID_STOCK);
+        }
+
+        // 7. Stock must not exceed capacity
+        if (warehouse.stock > warehouse.capacity) {
+            throw new ValidationException(AppConstants.ERR_WAREHOUSE_STOCK_EXCEEDS_CAPACITY);
         }
 
         warehouse.createdAt = LocalDateTime.now();

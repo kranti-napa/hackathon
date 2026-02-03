@@ -19,4 +19,9 @@ public interface WarehouseStore {
    * Count warehouses by location filter (optimized for large datasets)
    */
   long countByLocation(String location);
+
+  /**
+   * Calculate total capacity of all active warehouses at a location
+   */
+  int getTotalCapacityByLocation(String location);
 }

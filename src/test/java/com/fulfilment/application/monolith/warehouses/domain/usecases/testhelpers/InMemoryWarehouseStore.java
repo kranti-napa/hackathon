@@ -59,4 +59,15 @@ public class InMemoryWarehouseStore implements WarehouseStore {
         .filter(w -> w.location != null && w.location.equals(location) && w.archivedAt == null)
         .count();
   }
+
+  @Override
+  public int getTotalCapacityByLocation(String location) {
+    if (location == null) {
+      return 0;
+    }
+    return list.stream()
+        .filter(w -> w.location != null && w.location.equals(location) && w.archivedAt == null)
+        .mapToInt(w -> w.capacity != null ? w.capacity : 0)
+        .sum();
+  }
 }

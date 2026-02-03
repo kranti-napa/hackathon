@@ -117,4 +117,17 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
     // Use count query for efficiency instead of loading all records
     return count("location = ?1 and archivedAt is null", location);
   }
+
+  @Override
+  public int getTotalCapacityByLocation(String location) {
+    if (location == null) {
+      return 0;
+    }
+    // Sum capacity of all active warehouses at this location
+    Long totalCapacity = find("location = ?1 and archivedAt is null", location)
+        .stream()
+        .mapToLong(w -> w.capacity != null ? w.capacity : 0)
+        .sum();
+    return totalCapacity.intValue();
+  }
 }
