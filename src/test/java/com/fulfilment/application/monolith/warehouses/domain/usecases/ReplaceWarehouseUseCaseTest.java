@@ -208,40 +208,40 @@ public class ReplaceWarehouseUseCaseTest {
 
   @Test
   public void testReplaceLocationCapacityExceededThrows() {
-    // ZWOLLE-001 has maxCapacity of 100
-    // Create another warehouse at same location with 80 capacity
+    // ZWOLLE-001 has maxCapacity of 40
+    // Create another warehouse at same location with 30 capacity
     Warehouse other = new Warehouse();
     other.businessUnitCode = "MWH.OTHER";
     other.location = "ZWOLLE-001";
-    other.capacity = 80;
+    other.capacity = 30;
     other.stock = 0;
     store.create(other);
 
-    // Create existing warehouse with capacity 10 (total: 90)
+    // Create existing warehouse with capacity 5 (total: 35)
     Warehouse existing = new Warehouse();
     existing.businessUnitCode = "MWH.705";
     existing.location = "ZWOLLE-001";
-    existing.capacity = 10;
-    existing.stock = 5;
+    existing.capacity = 5;
+    existing.stock = 2;
     store.create(existing);
 
-    // Try to replace with capacity 30, which would make total 100 (80 + 30)
-    // This should still succeed since 100 <= 100
+    // Try to replace with capacity 5, which would keep total at 40 (30 + 10)
+    // Actually let's replace 5 with 10: 30 + 10 = 40 (at limit, OK)
     Warehouse replacement = new Warehouse();
     replacement.businessUnitCode = "MWH.705";
     replacement.location = "ZWOLLE-001";
-    replacement.capacity = 20; // 80 + 20 = 100 (at limit, OK)
-    replacement.stock = 5;
+    replacement.capacity = 10; // 30 + 10 = 40 (at limit, OK)
+    replacement.stock = 2;
 
     useCase.replace(replacement); // Should succeed
 
-    // Now try capacity 21, which would exceed
+    // Now try capacity 11, which would exceed
     Warehouse existing2 = store.findByBusinessUnitCode("MWH.705");
     Warehouse tooLarge = new Warehouse();
     tooLarge.businessUnitCode = "MWH.705";
     tooLarge.location = "ZWOLLE-001";
-    tooLarge.capacity = 21; // 80 + 21 = 101 > 100
-    tooLarge.stock = 5;
+    tooLarge.capacity = 11; // 30 + 11 = 41 > 40
+    tooLarge.stock = 2;
 
     assertThrows(
         ConflictException.class,
