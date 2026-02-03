@@ -47,19 +47,17 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
 	            throw new ValidationException(AppConstants.ERR_WAREHOUSE_CAPACITY_REQUIRED);
 	        }
 
-	        // Validate capacity is sufficient for stock
-	        if (newWarehouse.capacity < newWarehouse.stock) {
-	            throw new ValidationException(AppConstants.ERR_WAREHOUSE_CAPACITY_INSUFFICIENT);
-	        }
+        // Validate new capacity is sufficient to hold the existing stock
+        if (newWarehouse.capacity < existing.stock) {
+            throw new ValidationException(AppConstants.ERR_WAREHOUSE_CAPACITY_INSUFFICIENT);
+        }
 
-	        // Archive the existing warehouse instead of overwriting it
-	        archiveWarehouseOperation.archive(existing);
+        // Archive the existing warehouse instead of overwriting it
+        archiveWarehouseOperation.archive(existing);
 
-	        // Create new warehouse with same business unit code
-	        newWarehouse.createdAt = LocalDateTime.now();
-	        newWarehouse.archivedAt = null;
-	        warehouseStore.create(newWarehouse);
-	    }
-
-
+        // Create new warehouse with same business unit code
+        newWarehouse.createdAt = LocalDateTime.now();
+        newWarehouse.archivedAt = null;
+        warehouseStore.create(newWarehouse);
+    }
 }
